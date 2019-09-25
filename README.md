@@ -19,6 +19,7 @@ cd Kaggle-Steel-Defect-Detection/datasets/Steel_data
 ln -s ../../../Input/test_images ./
 ln -s ../../../Input/train_images ./
 ln -s ../../../Input/train.csv ./
+ln -s ../../../Input/sample_submission.csv ./
 ```
 
 ## Requirements
