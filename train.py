@@ -13,6 +13,7 @@ from utils.cal_dice_iou import Meter
 from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
 import pickle
+import random
 
 class TrainVal():
     def __init__(self, config):
@@ -45,7 +46,7 @@ class TrainVal():
         self.max_dice_valid = 0
 
         # 设置随机种子，注意交叉验证部分划分训练集和验证集的时候，要保持种子固定
-        self.seed = int(time.time() * 256)
+        self.seed = int(time.time())
         seed_torch(self.seed)
         with open(self.model_path + '/'+ TIMESTAMP + '.pkl','wb') as f:
             pickle.dump({'seed': self.seed}, f, -1)
