@@ -13,10 +13,10 @@ def get_config():
     else:
         parser = argparse.ArgumentParser()
         '''
-        第一阶段为768，第二阶段为1024，unet_resnet34时各个电脑可以设置的最大batch size
-        zdaiot:10,6 z840:12,6 mxq:20,10
+        unet_resnet34时各个电脑可以设置的最大batch size
+        zdaiot:12 z840:16 mxq:24
         '''
-        parser.add_argument('--image_size', type=int, default=768, help='image size')
+        # parser.add_argument('--image_size', type=int, default=768, help='image size')
         parser.add_argument('--batch_size', type=int, default=24, help='batch size')
         parser.add_argument('--epoch', type=int, default=40, help='epoch')
 

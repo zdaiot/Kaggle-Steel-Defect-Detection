@@ -49,4 +49,6 @@ I think this error means that you have two tensorboards installed so the plugin 
 ```
 
 ## TODO
-- [ ] 
+- [ ] Finish classify + segment model
+- [ ] Finish test.py and demo.py
+- [ ] Finish loss.py

@@ -78,7 +78,7 @@ class TrainVal():
                 # 保存到tensorboard，每一步存储一个
                 self.writer.add_scalar('train_loss', loss.item(), global_step+i)
 
-                descript = "Train Loss: %.7f, lr: %s" % (loss.item(), self.lr)
+                descript = "Fold: %d, Train Loss: %.7f, lr: %s" % (fold, loss.item(), self.lr)
                 tbar.set_description(desc=descript)
 
             # 每一个epoch完毕之后，执行学习率衰减
@@ -147,4 +147,3 @@ if __name__ == "__main__":
     train_val = TrainVal(config)
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
         train_val.train(train_loader, valid_loader, fold_index)
-        break
