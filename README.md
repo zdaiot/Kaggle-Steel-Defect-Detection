@@ -1,9 +1,9 @@
 Code for Kaggle [Steel Defect Detection](https://www.kaggle.com/c/severstal-steel-defect-detection)
 
 ## Datasets Prepare
-Download steel datasets from [here](https://www.kaggle.com/c/severstal-steel-defect-detection/data) , unzip and put them into `../input` directory.  
+Download steel datasets from [here](https://www.kaggle.com/c/severstal-steel-defect-detection/data) , unzip and put them into `../Input` directory.  
 
-Structure of the `../input` folder can be like:
+Structure of the `../Input` folder can be like:
 
 ```
 test_images
