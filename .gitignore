@@ -2,3 +2,4 @@
 .idea
 __pycache__
 datasets/Steel_data/
+checkpoints/
