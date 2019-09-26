@@ -48,7 +48,34 @@ I followed its instructions and I can make my tensorboard work.
 I think this error means that you have two tensorboards installed so the plugin will be duplicated. Another method would be helpful that is to reinstall the python environment using conda.
 ```
 
+## online submission of local csv file
+Please see [this](https://www.kaggle.com/c/severstal-steel-defect-detection/discussion/108638#latest-628715) for detailed information
+
+First, Install [Kaggle API](https://github.com/Kaggle/kaggle-api): `pip install kaggle`
+
+To use the Kaggle API, sign up for a Kaggle account at https://www.kaggle.com. Then go to the 'Account' tab of your user profile (https://www.kaggle.com/<username>/account) and select 'Create API Token'. This will trigger the download of kaggle.json, a file containing your API credentials. Place this file in the location ~/.kaggle/kaggle.json
+
+For your security, ensure that other users of your computer do not have read access to your credentials. On Unix-based systems you can do this with the following command:
+
+```bash
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+Clone the repo: `git clone https://github.com/alekseynp/kaggle-dev-ops.git`
+Enter the repo: `cd kaggle-dev-ops`
+Go to severstal: `cd severstal-steel-defect-detection`
+Initialize: `make init-csv-submission`
+Submit: `SUBMISSION=/path/to/csv/file.csv make release-csv`
+Click the link to the kernel and press the submit to competition button.
+
+When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter the following erro: `Invalid dataset specification /severstal_csv_submission`，you should manually edit the `kernel-csv-metadata.json` and add your username here:
+"dataset_sources": ["YOUR_KAGGLE_USERNAME_HERE/severstal_csv_submission"],
+
+**Please notice that:** Any submission made with this tool will score zero on the final private LB. The point of the tool is to make it easy to quickly submit CSVs created locally for the public test set and get a public LB score.
+
 ## TODO
-- [ ] Finish classify + segment model
-- [ ] Finish test.py and demo.py
-- [ ] Finish loss.py
+- [ ] finish classify + segment model
+- [ ] finish test.py and demo.py
+- [ ] finish loss.py
+- [ ] change dice code
+- [ ] finish choose_threshold
