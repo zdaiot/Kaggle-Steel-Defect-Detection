@@ -17,7 +17,7 @@ def get_config():
         zdaiot:12 z840:16 mxq:24
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=48, help='batch size')
         parser.add_argument('--epoch', type=int, default=40, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
@@ -30,7 +30,7 @@ def get_config():
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
         parser.add_argument('--num_workers', type=int, default=8)
-        parser.add_argument('--lr', type=float, default=2e-4, help='init lr')
+        parser.add_argument('--lr', type=float, default=4e-4, help='init lr')
         parser.add_argument('--weight_decay', type=float, default=0, help='weight_decay in optimizer')
         
         # dataset 

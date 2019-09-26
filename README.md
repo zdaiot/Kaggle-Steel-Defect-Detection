@@ -74,10 +74,9 @@ When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter t
 **Please notice that:** Any submission made with this tool will score zero on the final private LB. The point of the tool is to make it easy to quickly submit CSVs created locally for the public test set and get a public LB score.
 
 ## TODO
-- [ ] finish classify + segment model
-- [ ] finish create_submission.py 
+- [x] finish classify + segment model
+- [x] finish create_submission.py 
 - [ ] finish demo.py
 - [ ] finish loss.py
-- [ ] change dice code
 - [ ] finish choose_threshold
 - [ ] finish data enhancement

@@ -79,7 +79,7 @@ def get_model(model_name, ckpt_path):
 
     model.eval()
     state = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
-    model.load_state_dict(state["state_dict"])
+    model.module.load_state_dict(state["state_dict"])
 
     return model
 

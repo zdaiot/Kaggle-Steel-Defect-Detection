@@ -98,7 +98,7 @@ class TrainVal():
             
             state = {
                 'epoch': epoch,
-                'state_dict': self.model.state_dict(),
+                'state_dict': self.model.module.state_dict(),
                 'max_dice_valid': self.max_dice_valid,
             }
 
