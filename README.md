@@ -75,7 +75,9 @@ When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter t
 
 ## TODO
 - [ ] finish classify + segment model
-- [ ] finish test.py and demo.py
+- [ ] finish create_submission.py 
+- [ ] finish demo.py
 - [ ] finish loss.py
 - [ ] change dice code
 - [ ] finish choose_threshold
+- [ ] finish data enhancement

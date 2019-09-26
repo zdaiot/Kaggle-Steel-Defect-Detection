@@ -3,4 +3,9 @@
 __pycache__
 datasets/Steel_data/
 checkpoints/
+<<<<<<< HEAD
 *.pkl
+=======
+submission.csv
+models/dataset-metadata.json
+>>>>>>> b879e7f18525a072e0f090331d436653667396f1
