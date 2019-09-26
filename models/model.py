@@ -33,8 +33,8 @@ class Model():
         elif self.model_name == 'unet_dpn68':
             self.model = smp.Unet('dpn68', encoder_weights=self.encoder_weights, classes=self.class_num, activation=None)
         
-        # if torch.cuda.is_available():
-        #     self.model = torch.nn.DataParallel(self.model)
+        if torch.cuda.is_available():
+            self.model = torch.nn.DataParallel(self.model)
 
         self.model.to(self.device)
 
