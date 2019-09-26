@@ -3,3 +3,4 @@
 __pycache__
 datasets/Steel_data/
 checkpoints/
+*.pkl
