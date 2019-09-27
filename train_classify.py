@@ -95,11 +95,14 @@ class TrainVal():
             print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, epoch_loss/len(tbar)))
 
             # 验证模型
-            neg_accuracy, pos_accuracy, accuracy, loss_valid = self.validation(valid_loader)
+            class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_valid = \
+                self.validation(valid_loader)
+
             if accuracy > self.max_accuracy_valid: 
                 is_best = True
                 self.max_accuracy_valid = accuracy
-            else: is_best = False
+            else:
+                is_best = False
             
             state = {
                 'epoch': epoch,
@@ -110,6 +113,10 @@ class TrainVal():
             self.solver.save_checkpoint(os.path.join(self.model_path, '%s_classify_fold%d.pth' % (self.model_name, self.fold)), state, is_best)
             self.writer.add_scalar('valid_loss', loss_valid, epoch)
             self.writer.add_scalar('valid_accuracy', accuracy, epoch)
+            self.writer.add_scalar('valid_class_0_accuracy', class_accuracy[0], epoch)
+            self.writer.add_scalar('valid_class_1_accuracy', class_accuracy[1], epoch)
+            self.writer.add_scalar('valid_class_2_accuracy', class_accuracy[2], epoch)
+            self.writer.add_scalar('valid_class_3_accuracy', class_accuracy[3], epoch)
 
     def validation(self, valid_loader):
         ''' 完成模型的验证过程
@@ -135,9 +142,13 @@ class TrainVal():
                 tbar.set_description(desc=descript)
         loss_mean = loss_sum / len(tbar)
 
-        neg_accuracy, pos_accuracy, accuracy = meter.get_metrics()
-        print("Negative accuracy: %0.4f | positive accuracy: %0.4f | accuracy: %0.4f" % (neg_accuracy, pos_accuracy, accuracy))
-        return neg_accuracy, pos_accuracy, accuracy, loss_mean
+        class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy = meter.get_metrics()
+        print("Class_0_accuracy: %0.4f | Class_1_accuracy: %0.4f | Class_2_accuracy: %0.4f | Class_3_accuracy: %0.4f | "
+              "Negative accuracy: %0.4f | positive accuracy: %0.4f | accuracy: %0.4f" %
+              (class_accuracy[0], class_accuracy[1], class_accuracy[2], class_accuracy[3],
+               neg_accuracy, pos_accuracy, accuracy))
+        return class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_mean
+
 
 class ChooseMinArea():
     def __init__(self, ):
