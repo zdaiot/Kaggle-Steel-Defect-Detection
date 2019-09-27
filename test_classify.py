@@ -139,6 +139,3 @@ if __name__ == "__main__":
             cv2.waitKey(30)
         print("Accuracy: %.4f" % (num_true / number_sample))
     pass
-
-
-

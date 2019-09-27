@@ -82,7 +82,7 @@ def create_submission(best_threshold, min_size, batch_size, num_workers, mean, s
             for cls, pred in enumerate(preds):
                 pred, num = post_process(pred, best_threshold, min_size)
                 rle = mask2rle(pred)
-                name = fname + f"_{cls+1}"
+                name = fname + str(cls+1)
                 predictions.append([name, rle])
 
     # save predictions to submission.csv
