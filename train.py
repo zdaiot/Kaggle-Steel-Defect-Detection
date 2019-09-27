@@ -1,22 +1,27 @@
 from torch import optim
 import torch
 import tqdm
-from config import get_config
-from solver import solver
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import os
 import codecs, json
 import time
+import pickle
+import random
 from models.model import Model
 from utils.cal_dice_iou import Meter
 from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
-import pickle
-import random
+from config import get_config
+from solver import Solver
 
 class TrainVal():
     def __init__(self, config, fold):
+        '''
+        Args:
+            config: 配置参数
+            fold: 折数
+        '''
         # 加载网络模型
         self.model_name = config.model_name
         self.model = Model(self.model_name).create_model()
@@ -28,7 +33,7 @@ class TrainVal():
         self.fold = fold
 
         # 实例化实现各种子函数的 solver 类
-        self.solver = solver(self.model)
+        self.solver = Solver(self.model)
 
         # 加载损失函数
         self.criterion = torch.nn.BCEWithLogitsLoss()
@@ -70,7 +75,7 @@ class TrainVal():
 
             tbar = tqdm.tqdm(train_loader)
             for i, (images, masks) in enumerate(tbar):
-                # 网络的前向传播与反向传播
+                # 网络的前向传播与反向传播，损失函数中包含了sigmoid函数
                 masks_predict = self.solver.forward(images)
                 loss = self.solver.cal_loss(masks, masks_predict, self.criterion)
                 epoch_loss += loss.item()
@@ -123,7 +128,9 @@ class TrainVal():
                 masks_predict = self.solver.forward(images)
                 loss = self.solver.cal_loss(masks, masks_predict, self.criterion)
                 loss_sum += loss.item()
-
+                
+                # 注意，损失函数中包含sigmoid函数，meter.update中也包含了sigmoid函数
+                # masks_predict_binary = torch.sigmoid(masks_predict) > 0.5
                 meter.update(masks, masks_predict.detach().cpu())
 
                 descript = "Val Loss: {:.7f}".format(loss.item())
@@ -134,10 +141,6 @@ class TrainVal():
         dice, dice_neg, dice_pos = dices
         print("IoU: %0.4f | dice: %0.4f | dice_neg: %0.4f | dice_pos: %0.4f" % (iou, dice, dice_neg, dice_pos))
         return loss_mean, dice, iou
-
-class ChooseMinArea():
-    def __init__(self, ):
-        pass
 
 
 if __name__ == "__main__":

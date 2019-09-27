@@ -68,7 +68,7 @@ Initialize: `make init-csv-submission`
 Submit: `SUBMISSION=/path/to/csv/file.csv make release-csv`
 Click the link to the kernel and press the submit to competition button.
 
-When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter the following erro: `Invalid dataset specification /severstal_csv_submission`，you should manually edit the `kernel-csv-metadata.json` and add your username here:
+When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter the following erro: `Invalid dataset specification /severstal_csv_submission`. You should manually edit the `kernel-csv-metadata.json` and add your username here:
 "dataset_sources": ["YOUR_KAGGLE_USERNAME_HERE/severstal_csv_submission"],
 
 **Please notice that:** Any submission made with this tool will score zero on the final private LB. The point of the tool is to make it easy to quickly submit CSVs created locally for the public test set and get a public LB score.

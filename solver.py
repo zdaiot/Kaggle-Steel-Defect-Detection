@@ -6,7 +6,7 @@ import torch
 import shutil
 import os
 
-class solver():
+class Solver():
     def __init__(self, model):
         ''' 完成solver类的初始化
         Args:
