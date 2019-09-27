@@ -17,6 +17,8 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 from albumentations import (Normalize, Compose)
 from albumentations.pytorch import ToTensor
+from datasets.steel_dataset import TestDataset
+
 
 # https://www.kaggle.com/paulorzp/rle-functions-run-lenght-encode-decode
 def mask2rle(img):
@@ -29,32 +31,6 @@ def mask2rle(img):
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
     runs[1::2] -= runs[::2]
     return ' '.join(str(x) for x in runs)
-
-
-class TestDataset(Dataset):
-    '''Dataset for test prediction'''
-
-    def __init__(self, root, df, mean, std):
-        self.root = root
-        df['ImageId'] = df['ImageId_ClassId'].apply(lambda x: x.split('_')[0])
-        self.fnames = df['ImageId'].unique().tolist()
-        self.num_samples = len(self.fnames)
-        self.transform = Compose(
-            [
-                Normalize(mean=mean, std=std, p=1),
-                ToTensor(),
-            ]
-        )
-
-    def __getitem__(self, idx):
-        fname = self.fnames[idx]
-        path = os.path.join(self.root, fname)
-        image = cv2.imread(path)
-        images = self.transform(image=image)["image"]
-        return fname, images
-
-    def __len__(self):
-        return self.num_samples
 
 
 def post_process(probability, threshold, min_size):
