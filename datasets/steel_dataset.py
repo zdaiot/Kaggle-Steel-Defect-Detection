@@ -4,18 +4,25 @@ import os
 import cv2
 import warnings
 import pandas as pd
+from PIL import Image
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import torch
 from torch.utils.data import DataLoader, Dataset, sampler
-from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from torchvision import transforms
+from albumentations import (HorizontalFlip, VerticalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.torch import ToTensor
+import sys
+
+sys.path.append('.')
+from utils.data_augmentation import data_augmentation
 from utils.rle_parse import mask2rle, make_mask
+from utils.visualize import image_with_mask_torch
 import pickle
 warnings.filterwarnings("ignore")
 
 
-# Dataset
+# Dataset Segmentation
 class SteelDataset(Dataset):
     def __init__(self, df, data_folder, mean, std, phase):
         super(SteelDataset, self).__init__()
@@ -24,23 +31,22 @@ class SteelDataset(Dataset):
         self.mean = mean
         self.std = std
         self.phase = phase
-        self.transforms = get_transforms(phase, mean, std)
+        self.transforms = get_transforms
         self.fnames = self.df.index.tolist()
 
     def __getitem__(self, idx):
         image_id, mask = make_mask(idx, self.df)
         image_path = os.path.join(self.root, "train_images",  image_id)
         img = cv2.imread(image_path)
-        augmented = self.transforms(image=img, mask=mask)
-        img = augmented['image']
-        mask = augmented['mask'] # 1x256x1600x4
-        mask = mask[0].permute(2, 0, 1) # 1x4x256x1600
+        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std)
+        mask = mask.permute(2, 0, 1)
         return img, mask
 
     def __len__(self):
         return len(self.fnames)
 
 
+# Dataset Classification
 class SteelClassDataset(Dataset):
     def __init__(self, df, data_folder, mean, std, phase):
         super(SteelClassDataset, self).__init__()
@@ -49,17 +55,15 @@ class SteelClassDataset(Dataset):
         self.mean = mean
         self.std = std
         self.phase = phase
-        self.transforms = get_transforms(phase, mean, std)
+        self.transforms = get_transforms
         self.fnames = self.df.index.tolist()
 
     def __getitem__(self, idx):
         image_id, mask = make_mask(idx, self.df)
         image_path = os.path.join(self.root, "train_images",  image_id)
         img = cv2.imread(image_path)
-        augmented = self.transforms(image=img, mask=mask)
-        img = augmented['image']
-        mask = augmented['mask'] # 1x256x1600x4
-        mask = mask[0].permute(2, 0, 1) # 1x4x256x1600
+        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std)
+        mask = mask.permute(2, 0, 1) # 4x256x1600
         mask = mask.view(mask.size(0), -1)
         mask = torch.sum(mask, dim=1)
         mask = mask > 0
@@ -96,22 +100,33 @@ class TestDataset(Dataset):
         return self.num_samples
 
 
-def get_transforms(phase, mean, std):
-    list_transforms = []
-    if phase == "train":
-        list_transforms.extend(
-            [
-                HorizontalFlip(p=0.5), # only horizontal flip as of now
-            ]
-        )
-    list_transforms.extend(
-        [
-            Normalize(mean=mean, std=std, p=1),
-            ToTensor(),
-        ]
-    )
-    list_trfms = Compose(list_transforms)
-    return list_trfms
+def augmentation(image, mask):
+    """进行数据增强
+    Args:
+        image: 原始图像
+        mask: 原始掩膜
+    Return:
+        image_aug: 增强后的图像，Image图像
+        mask: 增强后的掩膜，Image图像
+    """
+    image_aug, mask_aug = data_augmentation(image, mask)
+    image_aug = Image.fromarray(image_aug)
+
+    return image_aug, mask_aug
+
+
+def get_transforms(phase, image, mask, mean, std):
+
+    if phase == 'train':
+        image, mask = augmentation(image, mask)
+
+    to_tensor = transforms.ToTensor()
+    normalize = transforms.Normalize(mean, std)
+    transform_compose = transforms.Compose([to_tensor, normalize])
+    image = transform_compose(image)
+    mask = torch.from_numpy(mask)
+
+    return image, mask
 
 
 def provider(
@@ -250,34 +265,24 @@ def classify_provider(
 
 
 if __name__ == "__main__":
-    data_folder = "datasets/Steel_data"
-    df_path = "datasets/Steel_data/train.csv"
+    data_folder = "Steel_data"
+    df_path = "Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     batch_size = 8
     num_workers = 4
     n_splits = 1
     # 测试分割数据集
-    # dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
-    # for fold_index, [train_dataloader, val_dataloader] in enumerate(dataloader):
-    #     train_bar = tqdm(train_dataloader)
-    #     class_color = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [139, 0, 139]]
-    #     for images, targets in train_bar:
-    #         image = images[0]
-    #         for i in range(3):
-    #             image[i] = image[i] * std[i]
-    #             image[i] = image[i] + mean[i]
-    
-    #         target = targets[0]
-    #         for i in range(target.size(0)):
-    #             target_0 = target[i] * class_color[i][0]
-    #             target_1 = target[i] * class_color[i][1]
-    #             target_2 = target[i] * class_color[i][2]
-    #             mask = torch.stack([target_0, target_1, target_2], dim=0)
-    #             image += mask
-    #         image = image.permute(1, 2, 0).numpy()
-    #         cv2.imshow('win', image)
-    #         cv2.waitKey(0)
+    dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
+    for fold_index, [train_dataloader, val_dataloader] in enumerate(dataloader):
+        train_bar = tqdm(train_dataloader)
+        class_color = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [139, 0, 139]]
+        for images, targets in train_bar:
+            image = images[0]
+            target = targets[0]
+            image = image_with_mask_torch(image, target, mean, std)['image']
+            cv2.imshow('win', image)
+            cv2.waitKey(0)
     class_dataloader = classify_provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
     # 测试分类数据集
     for fold_index, [train_dataloader, val_dataloader] in enumerate(class_dataloader):
@@ -299,6 +304,6 @@ if __name__ == "__main__":
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     image = cv2.putText(image, str(i), position, font, 1.2, color, 2)   
             cv2.imshow('win', image)
-            cv2.waitKey(480)
+            cv2.waitKey(60)
 
     pass
