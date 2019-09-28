@@ -48,7 +48,7 @@ class ChooseThresholdMinArea():
             best_minareas_little: 每一个类别的最优最小连通取余
             max_dices_little: 每一个类别的最大dice值
         '''
-        init_thresholds_range, init_minarea_range = np.arange(0.60, 0.81, 0.2), np.arange(768, 2305, 768)
+        init_thresholds_range, init_minarea_range = np.arange(0.60, 0.81, 0.03), np.arange(768, 2305, 256)
 
         # 阈值列表和最小连通域列表，大小为 Nx4
         thresholds_table_big = np.array([init_thresholds_range, init_thresholds_range, \
@@ -56,7 +56,7 @@ class ChooseThresholdMinArea():
         minareas_table_big = np.array([init_minarea_range, init_minarea_range, \
                                        init_minarea_range, init_minarea_range])  # 最小连通域列表
 
-        f, axes = plt.subplots(figsize=(28.8, 14.4), nrows=2, ncols=self.class_num)
+        f, axes = plt.subplots(figsize=(28.8, 18.4), nrows=2, ncols=self.class_num)
         cmap = sns.cubehelix_palette(start=1.5, rot=3, gamma=0.8, as_cmap=True)
 
         best_thresholds_big, best_minareas_big, max_dices_big = self.grid_search(thresholds_table_big, minareas_table_big, axes[0,:], cmap)
@@ -65,8 +65,8 @@ class ChooseThresholdMinArea():
         # 开始细分类
         thresholds_table_little, minareas_table_little = list(), list()
         for best_threshold_big, best_minarea_big in zip(best_thresholds_big, best_minareas_big):
-            thresholds_table_little.append(np.arange(best_threshold_big-0.03, best_threshold_big+0.03, 0.03))  # 阈值列表
-            minareas_table_little.append(np.arange(best_minarea_big-256, best_minarea_big+257, 256))  # 像素阈值列表
+            thresholds_table_little.append(np.arange(best_threshold_big-0.03, best_threshold_big+0.03, 0.015))  # 阈值列表
+            minareas_table_little.append(np.arange(best_minarea_big-256, best_minarea_big+257, 128))  # 像素阈值列表
         thresholds_table_little, minareas_table_little = np.array(thresholds_table_little), np.array(minareas_table_little)
 
         best_thresholds_little, best_minareas_little, max_dices_little = self.grid_search(thresholds_table_little, minareas_table_little, axes[1,:], cmap)
