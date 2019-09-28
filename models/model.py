@@ -3,7 +3,6 @@ import torch
 from torch.nn import Module
 from torch import nn
 import torch.nn.functional as F
-from utils.loss import ClassifyLoss
 
 
 class Model():
@@ -97,6 +96,4 @@ if __name__ == "__main__":
     x = torch.Tensor(8, 3, 256, 1600)
     y = torch.ones(8, 4)
     output = class_net(x)
-    criterion = ClassifyLoss()
-    loss = criterion(output, y)
-    print(loss)
+    print(output.size())

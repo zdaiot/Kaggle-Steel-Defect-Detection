@@ -8,22 +8,21 @@ from models.model import Model, ClassifyResNet
 
 
 class Get_Classify_Results():
-    def __init__(self, model_name, fold, save_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4):
         ''' 处理当前fold一个batch的数据分类结果
 
         :param model_name: 当前的模型名称
         :param fold: 当前的折数
-        :param save_path: 存放所有模型的路径
+        :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
         '''
         self.model_name = model_name
         self.fold = fold
-        self.save_path = save_path
+        self.model_path = model_path
         self.class_num = class_num
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # 加载模型及其权重
-        self.model_path = os.path.join(self.save_path, self.model_name)
         self.classify_model = ClassifyResNet(model_name)
         if torch.cuda.is_available():
             self.classify_model = torch.nn.DataParallel(self.classify_model)
@@ -48,21 +47,20 @@ class Get_Classify_Results():
 
 
 class Get_Segment_Results():
-    def __init__(self, model_name, fold, save_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4):
         ''' 处理当前fold一个batch的数据分割结果
 
         :param model_name: 当前的模型名称
         :param fold: 当前的折数
-        :param save_path: 存放所有模型的路径
+        :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
         '''
         self.model_name = model_name
         self.fold = fold
-        self.save_path = save_path
+        self.model_path = model_path
         self.class_num = class_num
 
         # 加载模型及其权重
-        self.model_path = os.path.join(self.save_path, self.model_name)
         self.segment_model = Model(self.model_name).create_model()
         self.segment_model_path = os.path.join(self.model_path, '%s_fold%d_best.pth' % (self.model_name, self.fold))
         self.solver = Solver(self.segment_model)
@@ -115,21 +113,21 @@ class Get_Segment_Results():
 
 
 class Classify_Segment_Fold():
-    def __init__(self, model_name, fold, save_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4):
         ''' 处理当前fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
         :param fold: 当前的折数
-        :param save_path: 存放所有模型的路径
+        :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
         '''
         self.model_name = model_name
         self.fold = fold
-        self.save_path = save_path
+        self.model_path = model_path
         self.class_num = class_num
 
-        self.classify_model = Get_Classify_Results(self.model_name, self.fold, self.save_path, self.class_num)
-        self.segment_model = Get_Segment_Results(self.model_name, self.fold, self.save_path, self.class_num)
+        self.classify_model = Get_Classify_Results(self.model_name, self.fold, self.model_path, self.class_num)
+        self.segment_model = Get_Segment_Results(self.model_name, self.fold, self.model_path, self.class_num)
 
     def classify_segment(self, images):
         ''' 处理当前fold一个batch的分割结果和分类结果
@@ -149,17 +147,17 @@ class Classify_Segment_Fold():
 
 
 class Classify_Segment_Folds():
-    def __init__(self, model_name, n_splits, save_path, dataloader, class_num=4):
+    def __init__(self, model_name, n_splits, model_path, dataloader, class_num=4):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
         :param n_splits: 总共有多少折，为list列表
-        :param save_path: 存放所有模型的路径
+        :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
         '''
         self.model_name = model_name
         self.n_splits = n_splits
-        self.save_path = save_path
+        self.model_path = model_path
         self.class_num = class_num
         self.dataloader = dataloader
 
@@ -171,8 +169,8 @@ class Classify_Segment_Folds():
         '''
 
         for fold in self.n_splits:
-            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.save_path, self.class_num))
-            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.save_path, self.class_num))
+            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num))
+            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num))
 
     def classify_segment_folds(self, images):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果

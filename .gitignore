@@ -6,3 +6,4 @@ checkpoints/
 *.pkl
 submission.csv
 *.json
+kaggle/
