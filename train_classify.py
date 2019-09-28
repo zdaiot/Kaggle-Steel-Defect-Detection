@@ -2,14 +2,14 @@ from torch import optim
 import torch
 import tqdm
 from config import get_config
-from classify_solver import solver
+from solver import Solver
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import os
 import codecs, json
 import time
 
-from models.classify import ClassifyResNet
+from models.model import ClassifyResNet
 from utils.loss import ClassifyLoss
 from datasets.steel_dataset import classify_provider
 from utils.cal_classify_accuracy import Meter
@@ -34,7 +34,7 @@ class TrainVal():
         self.fold = fold
 
         # 实例化实现各种子函数的 solver 类
-        self.solver = solver(self.model)
+        self.solver = Solver(self.model)
 
         # 加载损失函数
         self.criterion = ClassifyLoss()
@@ -148,11 +148,6 @@ class TrainVal():
               (class_accuracy[0], class_accuracy[1], class_accuracy[2], class_accuracy[3],
                neg_accuracy, pos_accuracy, accuracy))
         return class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_mean
-
-
-class ChooseMinArea():
-    def __init__(self, ):
-        pass
 
 
 if __name__ == "__main__":

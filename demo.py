@@ -107,7 +107,7 @@ def pred_show(images, preds, mean, std, targets=None, flag=False):
 if __name__ == "__main__":
     sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
     test_data_folder = 'datasets/Steel_data/test_images'
-    ckpt_path = 'checkpoints/unet_resnet34/unet_resnet34_fold2_best.pth'
+    ckpt_path = 'checkpoints/unet_resnet34/unet_resnet34_fold0_best.pth'
 
     # 设置超参数
     model_name = 'unet_resnet34'

@@ -7,7 +7,7 @@ from tqdm import tqdm
 import cv2
 
 from datasets.steel_dataset import TestDataset, classify_provider
-from models.classify import ClassifyResNet
+from models.model import ClassifyResNet
 
 
 class ClassifyTest():

@@ -204,21 +204,22 @@ if __name__ == "__main__":
     
     dataloaders = provider(config.dataset_root, os.path.join(config.dataset_root, 'train.csv'), mean, std, config.batch_size, config.num_workers, config.n_splits)
     results = {}
+    # 存放权重的路径
+    model_path = os.path.join(config.save_path, config.model_name)
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
         if fold_index != 0:
             continue
-        # 存放权重的路径
-        model_path = os.path.join(config.save_path, config.model_name)
+
         # 存放权重的路径+文件名
         load_path = os.path.join(model_path, '%s_fold%d_best.pth' % (config.model_name, fold_index))
         # 加载模型
         model = get_model(config.model_name, load_path)
         mychoose_threshold_minarea = ChooseThresholdMinArea(model, config.model_name, valid_loader, fold_index, model_path)
-        best_threshold, best_minarea, max_dice = mychoose_threshold_minarea.choose_threshold_minarea()
-        result = {'best_thresholds': best_threshold, 'best_minareas': best_minarea, 'max_dices': max_dice}
+        best_thresholds, best_minareas, max_dices = mychoose_threshold_minarea.choose_threshold_minarea()
+        result = {'best_thresholds': best_thresholds, 'best_minareas': best_minareas, 'max_dices': max_dices}
 
         results[str(fold_index)] = result
-        with codecs.open(model_path + '/result_fold{}.json'.format(fold_index), 'w', "utf-8") as json_file:
-            json.dump(results, json_file, ensure_ascii=False)
+    with codecs.open(model_path + '/result.json', 'w', "utf-8") as json_file:
+        json.dump(results, json_file, ensure_ascii=False)
 
-        print('save the result')
+    print('save the result')

@@ -6,6 +6,7 @@ import torch
 import shutil
 import os
 
+
 class Solver():
     def __init__(self, model):
         ''' 完成solver类的初始化
@@ -22,25 +23,31 @@ class Solver():
             images: [batch_size, channel, height, width]
             
         Return:
-            masks_predict: [batch_size, class_num, height, width]，One-hot数据
+            output: 网络的输出，具体维度和含义与self.model有关，对我们任务而言：
+                若self.model为分割模型，则维度为[batch_size, class_num, height, width]，One-hot数据
+                若self.model为分类模型，则维度为[batch_size, class_num]，One-hot数据
         '''
         images = images.to(self.device)
-        masks_predict = self.model(images)
-        return masks_predict
+        outputs = self.model(images)
+        return outputs
 
-    def cal_loss(self, masks, masks_predict, criterion):
+    def cal_loss(self, targets, predicts, criterion):
         ''' 根据真实类标和预测出的类标计算损失
         
         Args:
-            masks: [batch_size, class_num, height, width]，真实类标，One-hot数据
-            masks_predict: [batch_size, class_num, height, width]，预测出的数据
+            targets: 真实类标，具体维度和self.model有关，对我们任务而言：
+                若为分割模型，则维度为[batch_size, class_num, height, width]，真实类标，One-hot数据
+                若为分类模型，则维度为[batch_size, class_num]，真实类标，One-hot数据
+            predicts: 网络的预测输出，具体维度和self.model有关，对我们任务而言：
+                若为分割模型，则维度为[batch_size, class_num, height, width]，预测出的数据
+                若为分类模型，则维度为[batch_size, class_num, 1, 1]，预测出的数据
             criterion: 使用的损失函数
 
         Return:
             loss: 计算出的损失值
         '''
-        masks = masks.to(self.device)
-        return criterion(masks_predict, masks)
+        targets = targets.to(self.device)
+        return criterion(predicts, targets)
 
     def backword(self, optimizer, loss):
         ''' 实现网络的反向传播
