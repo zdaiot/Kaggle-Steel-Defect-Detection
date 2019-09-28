@@ -19,17 +19,19 @@ from config import get_config
 class ChooseThresholdMinArea():
     ''' 选择每一类的像素阈值和最小连通域
     '''
-    def __init__(self, model, valid_loader, fold, save_path, class_num=4):
+    def __init__(self, model, model_name, valid_loader, fold, save_path, class_num=4):
         ''' 模型初始化
 
         Args:
             model: 使用的模型
+            model_name: 当前模型的名称
             valid_loader: 验证数据的Dataloader
             fold: 当前为多少折
             save_path: 保存结果的路径
             class_num: 有多少个类别
         '''
         self.model = model
+        self.model_name = model_name
         self.valid_loader = valid_loader
         self.fold = fold
         self.save_path = save_path
@@ -39,12 +41,12 @@ class ChooseThresholdMinArea():
         self.solver = Solver(model)
 
     def choose_threshold_minarea(self):
-        ''' 采用网格法搜索最优像素阈值和最小连通域
+        ''' 采用网格法搜索各个类别最优像素阈值和最优最小连通域，并画出各个类别搜索过程中的热力图
         
         Return:
-            best_threshold: 每一个类别的最优阈值
-            best_minarea: 每一个类别的最优最小连通取余
-            max_dice: 每一个类别的最大dice值
+            best_thresholds_little: 每一个类别的最优阈值
+            best_minareas_little: 每一个类别的最优最小连通取余
+            max_dices_little: 每一个类别的最大dice值
         '''
         init_thresholds_range, init_minarea_range = np.arange(0.60, 0.81, 0.2), np.arange(768, 2305, 768)
 
@@ -54,7 +56,7 @@ class ChooseThresholdMinArea():
         minareas_table_big = np.array([init_minarea_range, init_minarea_range, \
                                        init_minarea_range, init_minarea_range])  # 最小连通域列表
 
-        f, axes = plt.subplots(figsize=(28.8, 9.6), nrows=2, ncols=self.class_num)
+        f, axes = plt.subplots(figsize=(28.8, 14.4), nrows=2, ncols=self.class_num)
         cmap = sns.cubehelix_palette(start=1.5, rot=3, gamma=0.8, as_cmap=True)
 
         best_thresholds_big, best_minareas_big, max_dices_big = self.grid_search(thresholds_table_big, minareas_table_big, axes[0,:], cmap)
@@ -70,13 +72,27 @@ class ChooseThresholdMinArea():
         best_thresholds_little, best_minareas_little, max_dices_little = self.grid_search(thresholds_table_little, minareas_table_little, axes[1,:], cmap)
         print('best_thresholds_little:{}, best_minareas_little:{}, max_dices_little:{}'.format(best_thresholds_little, best_minareas_little, max_dices_little))
 
-        f.savefig(os.path.join(self.save_path, '_fold'+str(self.fold)))
+        f.savefig(os.path.join(self.save_path, self.model_name + '_fold'+str(self.fold)))
         # plt.show()
         plt.close()
 
-        return best_thresholds_little, best_minareas_little, max_dices_little
+        return best_thresholds_little, [float(x) for x in best_minareas_little], max_dices_little
 
-    def grid_search(self, thresholds_table, minareas_table, aixses, cmap):
+    def grid_search(self, thresholds_table, minareas_table, axes, cmap):
+        ''' 给定包含各个类别搜索区间的thresholds_table和minareas_table，求的各个类别的最优像素阈值，最优最小连通域，最高dice；
+            并画出各个类别搜索过程中的热力图
+
+        Args:
+            thresholds_table: 待搜索的阈值范围，维度为[4, N]，numpy类型
+            minareas_table: 待搜索的最小连通域范围，维度为[4, N]，numpy类型
+            axes: 画各个类别搜索热力图时所需要的画柄，尺寸为[class_num]
+            cmap: 画图时所需要的cmap
+
+        return:
+            best_thresholds: 各个类别的最优像素阈值，尺寸为[class_num]
+            best_minareas: 各个类别的最优最小连通域，尺寸为[class_num]
+            max_dices: 各个类别的最大dice，尺寸为[class_num]
+        '''
         dices_table = np.zeros((self.class_num, np.shape(thresholds_table)[1], np.shape(minareas_table)[1]))
         tbar = tqdm.tqdm(self.valid_loader)
         with torch.no_grad():
@@ -97,22 +113,22 @@ class ChooseThresholdMinArea():
             max_dices.append(max_dice)
 
             data = pd.DataFrame(data=dices_oneclass_table, index=np.around(thresholds_table[each_class,:], 3), columns=minareas_table[each_class,:])
-            sns.heatmap(data, linewidths=0.05, ax=aixses[each_class], vmax=np.max(dices_oneclass_table), vmin=np.min(dices_oneclass_table), cmap=cmap,
+            sns.heatmap(data, linewidths=0.05, ax=axes[each_class], vmax=np.max(dices_oneclass_table), vmin=np.min(dices_oneclass_table), cmap=cmap,
                         annot=True, fmt='.4f')
-            aixses[each_class].set_title('Little-scale search')
+            axes[each_class].set_title('search result')
         return best_thresholds, best_minareas, max_dices
 
     def grid_search_batch(self, thresholds_table, minareas_table, masks_predict_allclasses, masks_allclasses):
-        '''给定thresholds和minareas矩阵，遍历每一个组合得到每一类的最大dice及其对应的参数
+        '''给定thresholds、minareas矩阵、一个batch的预测结果和真实标签，遍历每个类的每一个组合得到对应的dice值
 
         Args:
-            thresholds_table: 待搜索的阈值范围，尺寸为[4, N]，numpy类型
-            minareas_table: 待搜索的最小连通域范围，尺寸为[4, N]，numpy类型
+            thresholds_table: 待搜索的阈值范围，维度为[4, N]，numpy类型
+            minareas_table: 待搜索的最小连通域范围，维度为[4, N]，numpy类型
+            masks_predict_allclasses: 所有类别的某个batch的预测结果且未经过sigmoid，维度为[batch_size, class_num, height, width]
+            masks_allclasses: 所有类别的某个batch的真实类标，维度为[batch_size, class_num, height, width]
 
         Return:
-            best_thresholds: 各个类别最大dice对应的threshold
-            best_minareas: 各个类别最大dice对应的minarea
-            max_dices: 各个类别最大的dice值
+            dices_table: 各个类别在其各自的所有搜索组合中所得到的dice值，维度为[4, M, N]
         '''
 
         # 得到每一个类别的搜索阈值区间和最小连通域搜索区间
@@ -128,16 +144,16 @@ class ChooseThresholdMinArea():
         return np.array(dices_table)
 
     def post_process(self, thresholds_range, minareas_range, masks_predict_oneclass, masks_oneclasses):
-        '''Post processing of each predicted mask, components with lesser number of pixels than `minarea` are ignored
+        '''给定某个类别的某个batch的数据，遍历所有搜索组合，得到每个组合的dice值
         
         Args:
-            masks_predict: 预测出的tensor向量，维度为[batch_size, classes_num, height, width]
-            thresholds_classes: 各个类别的像素阈值，类型为list，长度为class_num，高于这个阈值的像素点值置为1
-            minareas_classes: 各个类别的最小连通区域，类型为list，长度为class_num，小于这个连通区域的置为0
+            thresholds_range: 具体某个类别的像素阈值搜索区间，尺寸为[M]
+            minareas_range: 具体某个类别的最小连通域搜索区间，尺寸为[N]
+            masks_predict_oneclass: 预测出的某个类别的该batch的tensor向量且未经过sigmoid，维度为[batch_size, height, width]
+            masks_oneclasses: 某个类别的该batch的真实类标，维度为[batch_size, height, width]
         
         Return:
-            batch_preds: 经过threshold和minarea的预测结果，为二值化的tensor向量，维度为[batch_size, classes_num, height, width]
-            sums_predict: 该batch中预测出的各个类别的数目，为list向量，维度为[class_num]
+            dices_range: 某个类别的该batch的所有搜索组合得到dice矩阵，维度为[M, N]
         '''
 
         # 注意，损失函数中包含sigmoid函数，一般情况下需要手动经过sigmoid函数
@@ -197,12 +213,12 @@ if __name__ == "__main__":
         load_path = os.path.join(model_path, '%s_fold%d_best.pth' % (config.model_name, fold_index))
         # 加载模型
         model = get_model(config.model_name, load_path)
-        mychoose_threshold_minarea = ChooseThresholdMinArea(model, valid_loader, fold_index, model_path)
+        mychoose_threshold_minarea = ChooseThresholdMinArea(model, config.model_name, valid_loader, fold_index, model_path)
         best_threshold, best_minarea, max_dice = mychoose_threshold_minarea.choose_threshold_minarea()
-        result = {'best_threshold': best_threshold, 'best_minarea': best_minarea, 'max_dice': max_dice}
+        result = {'best_thresholds': best_threshold, 'best_minareas': best_minarea, 'max_dices': max_dice}
 
         results[str(fold_index)] = result
-        with codecs.open(config.save_path + '/result_fold}.json'.format(fold_index), 'w', "utf-8") as json_file:
-            json.dump(result, json_file, ensure_ascii=False)
+        with codecs.open(model_path + '/result_fold{}.json'.format(fold_index), 'w', "utf-8") as json_file:
+            json.dump(results, json_file, ensure_ascii=False)
 
         print('save the result')
