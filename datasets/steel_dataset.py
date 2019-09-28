@@ -282,7 +282,7 @@ if __name__ == "__main__":
             target = targets[0]
             image = image_with_mask_torch(image, target, mean, std)['image']
             cv2.imshow('win', image)
-            cv2.waitKey(0)
+            cv2.waitKey(480)
     class_dataloader = classify_provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
     # 测试分类数据集
     for fold_index, [train_dataloader, val_dataloader] in enumerate(class_dataloader):
