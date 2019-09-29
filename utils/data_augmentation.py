@@ -13,7 +13,7 @@ from copy import deepcopy
 from albumentations import (
     Compose, HorizontalFlip, VerticalFlip, CLAHE, RandomRotate90, HueSaturationValue,
     RandomBrightness, RandomContrast, RandomGamma, OneOf,
-    ToFloat, ShiftScaleRotate,GridDistortion, ElasticTransform, JpegCompression, HueSaturationValue,
+    ToFloat, ShiftScaleRotate, GridDistortion, ElasticTransform, JpegCompression, HueSaturationValue,
     RGBShift, RandomBrightnessContrast, RandomContrast, Blur, MotionBlur, MedianBlur, GaussNoise,CenterCrop,
     IAAAdditiveGaussianNoise,GaussNoise,Cutout,Rotate, Normalize
 )
@@ -61,7 +61,8 @@ def data_augmentation(original_image, original_mask):
     """
     augmentations = Compose([
         HorizontalFlip(p=0.4),
-        Rotate(limit=15, p=0.4),
+        VerticalFlip(p=0.4),
+        ShiftScaleRotate(shift_limit=0, rotate_limit=8, p=0.4),
         # 直方图均衡化
         CLAHE(p=0.4),
 
