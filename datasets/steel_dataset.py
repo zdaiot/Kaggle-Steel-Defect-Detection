@@ -10,7 +10,6 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 import torch
 from torch.utils.data import DataLoader, Dataset, sampler
 from torchvision import transforms
-from albumentations import (HorizontalFlip, VerticalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensor
 import sys
 
@@ -81,10 +80,10 @@ class TestDataset(Dataset):
         df['ImageId'] = df['ImageId_ClassId'].apply(lambda x: x.split('_')[0])
         self.fnames = df['ImageId'].unique().tolist()
         self.num_samples = len(self.fnames)
-        self.transform = Compose(
+        self.transform = transforms.Compose(
             [
-                Normalize(mean=mean, std=std, p=1),
-                ToTensor(),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
             ]
         )
 
@@ -92,7 +91,7 @@ class TestDataset(Dataset):
         fname = self.fnames[idx]
         path = os.path.join(self.root, fname)
         image = cv2.imread(path)
-        images = self.transform(image=image)["image"]
+        images = self.transform(image)
         return fname, images
 
     def __len__(self):

@@ -9,8 +9,6 @@ model_name="unet_resnet34"
 if [ ! -d "kaggle" ]; then
   mkdir -p kaggle/sources
   mkdir -p kaggle/sources/models
-  mkdir -p kaggle/sources/datasets
-  mkdir -p kaggle/sources/utils
   mkdir -p kaggle/checkpoints
   mkdir -p kaggle/submission
   mkdir -p kaggle/segmentation_models
@@ -26,12 +24,12 @@ rm kaggle/$model_name/result.json -f
 
 # 复制脚本文件
 cp models/model.py kaggle/sources/models
-cp datasets/steel_dataset.py kaggle/sources/datasets
 cp solver.py kaggle/sources
 cp classify_segment.py kaggle/sources
-cp utils/data_augmentation.py kaggle/sources/utils
-cp utils/rle_parse.py kaggle/sources/utils
-cp utils/visualize.py kaggle/sources/utils
+
+# 创建__init__.py
+echo "Create __init__.py"
+touch kaggle/sources/models/__init__.py
 
 # 复制权重文件
 cp checkpoints/$model_name/*_best.pth kaggle/checkpoints

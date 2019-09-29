@@ -3,17 +3,44 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
+from torchvision import transforms
+import cv2
 
 kaggle = 0
 if kaggle:
-    os.system('pip install /kaggle/input/segmentation-models/pretrainedmodels-0.7.4/ > /dev/null')
-    os.system('pip install /kaggle/input/segmentation-models/segmentation_models.pytorch/ > /dev/null')
+    os.system('pip install /kaggle/input/segmentation_models/pretrainedmodels-0.7.4/ > /dev/null')
+    os.system('pip install /kaggle/input/segmentation_models/segmentation_models.pytorch/ > /dev/null')
     package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
     sys.path.append(package_path)
-from datasets.steel_dataset import TestDataset
 from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold
 
+
+class TestDataset(Dataset):
+    '''Dataset for test prediction'''
+
+    def __init__(self, root, df, mean, std):
+        self.root = root
+        df['ImageId'] = df['ImageId_ClassId'].apply(lambda x: x.split('_')[0])
+        self.fnames = df['ImageId'].unique().tolist()
+        self.num_samples = len(self.fnames)
+        self.transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
+
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        path = os.path.join(self.root, fname)
+        image = cv2.imread(path)
+        images = self.transform(image)
+        return fname, images
+
+    def __len__(self):
+        return self.num_samples
 
 # https://www.kaggle.com/paulorzp/rle-functions-run-lenght-encode-decode
 def mask2rle(img):

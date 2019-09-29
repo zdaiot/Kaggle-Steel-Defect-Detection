@@ -15,6 +15,8 @@ class Model():
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.class_num = class_num
         self.encoder_weights = encoder_weights
+        if encoder_weights is None:
+            print('Random initialize weights...')
 
     def create_model_cpu(self):
         ''' 根据model_name，调用对应的模型
@@ -64,10 +66,10 @@ class Model():
 
 
 class ClassifyResNet(Module):
-    def __init__(self, model_name, class_num=4, training=True):
+    def __init__(self, model_name, class_num=4, training=True, encoder_weights='imagenet'):
         super(ClassifyResNet, self).__init__()
         self.class_num = class_num
-        model = Model(model_name, class_num=class_num).create_model_cpu()
+        model = Model(model_name, encoder_weights=encoder_weights, class_num=class_num).create_model_cpu()
         # 注意模型里面必须包含 encoder 模块
         self.encoder = model.encoder
         self.feature = nn.Conv2d(512, 32, kernel_size=1)

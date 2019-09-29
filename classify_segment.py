@@ -23,7 +23,7 @@ class Get_Classify_Results():
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # 加载模型及其权重
-        self.classify_model = ClassifyResNet(model_name)
+        self.classify_model = ClassifyResNet(model_name, encoder_weights=None)
         if torch.cuda.is_available():
             self.classify_model = torch.nn.DataParallel(self.classify_model)
 
@@ -61,7 +61,7 @@ class Get_Segment_Results():
         self.class_num = class_num
 
         # 加载模型及其权重
-        self.segment_model = Model(self.model_name).create_model()
+        self.segment_model = Model(self.model_name, encoder_weights=None).create_model()
         self.segment_model_path = os.path.join(self.model_path, '%s_fold%d_best.pth' % (self.model_name, self.fold))
         self.solver = Solver(self.segment_model)
         self.segment_model = self.solver.load_checkpoint(self.segment_model_path)

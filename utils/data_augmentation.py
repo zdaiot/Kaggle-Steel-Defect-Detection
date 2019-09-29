@@ -14,8 +14,8 @@ from albumentations import (
 )
 
 sys.path.append('.')
-from utils.visualize import image_with_mask_torch, image_with_mask_numpy
-from utils.rle_parse import make_mask
+from .visualize import image_with_mask_torch, image_with_mask_numpy
+from .rle_parse import make_mask
 
 
 def visualize(image, mask, original_image=None, original_mask=None):
