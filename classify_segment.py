@@ -147,7 +147,7 @@ class Classify_Segment_Fold():
 
 
 class Classify_Segment_Folds():
-    def __init__(self, model_name, n_splits, model_path, dataloader, class_num=4):
+    def __init__(self, model_name, n_splits, model_path, class_num=4):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
@@ -159,7 +159,6 @@ class Classify_Segment_Folds():
         self.n_splits = n_splits
         self.model_path = model_path
         self.class_num = class_num
-        self.dataloader = dataloader
 
         self.classify_models, self.segment_models = list(), list()
         self.get_classify_segment_models()
@@ -188,6 +187,48 @@ class Classify_Segment_Folds():
                 for each_class, pred in enumerate(predicts):
                     if pred == 0:
                         predict_masks[index, each_class, ...] = 0
+            results += predict_masks.detach().cpu()
+        vote_model_num = len(self.n_splits)
+        vote_ticket = round(vote_model_num / 2.0)
+        results = results > vote_ticket
+
+        return results
+
+
+class Segment_Folds():
+    def __init__(self, model_name, n_splits, model_path, class_num=4):
+        ''' 使用投票法处理所有fold一个batch的分割结果
+
+        :param model_name: 当前的模型名称
+        :param n_splits: 总共有多少折，为list列表
+        :param model_path: 存放所有模型的路径
+        :param class_num: 类别总数
+        '''
+        self.model_name = model_name
+        self.n_splits = n_splits
+        self.model_path = model_path
+        self.class_num = class_num
+
+        self.segment_models = list()
+        self.get_segment_models()
+
+    def get_segment_models(self):
+        ''' 加载所有折的分割模型
+        '''
+
+        for fold in self.n_splits:
+            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num))
+
+    def segment_folds(self, images):
+        ''' 使用投票法处理所有fold一个batch的分割结果
+
+        :param images: 一个batch的数据，维度为[batch, channels, height, width]
+        :return: results，使用投票法处理所有fold一个batch的分割结果和分类结果，维度为[batch, class_num, height, width]
+        '''
+        results = torch.zeros(images.shape[0], self.class_num, images.shape[2], images.shape[3])
+        for segment_model in self.segment_models:
+            # 得到一个batch数据分割模型的结果，维度为[batch, class_num, height, width]
+            predict_masks = segment_model.get_segment_results(images)
             results += predict_masks.detach().cpu()
         vote_model_num = len(self.n_splits)
         vote_ticket = round(vote_model_num / 2.0)

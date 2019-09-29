@@ -4,129 +4,133 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 import cv2
-
-from create_submission import get_model, post_process
+import os
+from config import get_config
+from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold, Segment_Folds, Get_Segment_Results
 from datasets.steel_dataset import TestDataset, provider
 
 
-def test_seg_predict(best_threshold, min_size, batch_size, num_workers, mean, std, data_folder, sample_submission_path, model):
-    # 加载数据集
-    df = pd.read_csv(sample_submission_path)
-    dataloader = DataLoader(
-        TestDataset(data_folder, df, mean, std),
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True
-    )
+def demo(n_splits, use_segment_only, model_name, mean, std, show_truemask_flag, dataloader, model_path, auto_flag):
+    '''
 
-    # start prediction
-    for i, [_, images] in enumerate(tqdm(dataloader)):
-        images = images.cuda()
-        preds = predict_batch(model, images, best_threshold, min_size)
-        pred_show(images, preds, mean, std)
-
-
-def train_seg_predict(best_threshold, min_size, mean, std, dataloader, model):
-    """对训练集和验证集的样本的预测结果进行可视化
-
-    :param best_threshold: 阈值
-    :param min_size: 单个掩膜所包含的最小像素个数
+    :param n_splits: 折数，类型为list
+    :param use_segment_only: 是否只使用分割模型
+    :param model_name: 当前模型的名称
     :param mean: 均值
     :param std: 方差
     :param dataloader: 数据加载器
-    :param model: 模型
-    :return: 无
-    """
-    for i, [images, targets] in enumerate(tqdm(dataloader)):
-        images = images.cuda()
-        preds = predict_batch(model, images, best_threshold, min_size)
-        pred_show(images, preds, mean, std, targets, True)
+    :param show_truemask_flag: 是否显示真实标定
+    :param model_path: 当前模型权重存放的目录
+    :return: None
+    '''
+    if use_segment_only:
+        if len(n_splits) == 1:
+            model = Get_Segment_Results(model_name, n_splits[0], model_path).get_segment_results
+        else:
+            model = Segment_Folds(model_name, n_splits, model_path).segment_folds
+    else:
+        if len(n_splits) == 1:
+            model = Classify_Segment_Fold(model_name, n_splits[0], model_path).classify_segment
+        else:
+            model = Classify_Segment_Folds(model_name, n_splits, model_path).classify_segment_folds
+
+    # start prediction
+    if show_truemask_flag:
+        for images, masks in tqdm(dataloader):
+            results = model(images).detach().cpu().numpy()
+            pred_show(images, results, mean, std, targets=masks, flag=show_truemask_flag, auto_flag=auto_flag)
+    else:
+        for fnames, images in tqdm(dataloader):
+            results = model(images).detach().cpu().numpy()
+            pred_show(images, results, mean, std, targets=None, flag=show_truemask_flag, auto_flag=auto_flag)
 
 
-def predict_batch(model, images, best_threshold, min_size):
-    """对一个batch的样本进行预测
-
-    :param model: 模型
-    :param images: 一个batch的样本
-    :param best_threshold: 阈值
-    :param min_size: 掩膜块最少包含的像素个数
-    :return:
-    """
-    batch_preds = torch.sigmoid(model(images))
-    batch_preds = batch_preds.detach().cpu().numpy()    
-    for batch_index, preds in enumerate(batch_preds):
-        for cls_index, pred in enumerate(preds):
-            pred, num = post_process(pred, best_threshold, min_size)
-            preds[cls_index] = pred
-        batch_preds[batch_index] = preds
-
-    return batch_preds
-
-
-def pred_show(images, preds, mean, std, targets=None, flag=False):
+def pred_show(images, preds, mean, std, targets=None, flag=False, auto_flag=False):
     """可视化预测结果，与真实类别进行对比
 
-    :param images: 样本
-    :param preds: 预测结果
+    :param images: 样本，tensor，[batch_size, 3, h, w]
+    :param preds: 预测结果，numpy.array，[batch_size, 4, h, w]
     :param mean: 均值
     :param std: 方差
-    :param targets: 真实标定
+    :param targets: 真实标定，tensor，[batch_size, 4, h, w]
     :param flag: 是否显示真实标定
+    :param auto_flag: 是否使用自动显示
     :return: 无
     """
     class_color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (139, 0, 139)]
     batch_size = images.size(0)
     for index in range(batch_size):
+        # 将图片转换为RGB
         image = images[index]
         for i in range(3):
             image[i] = image[i] * std[i]
             image[i] = image[i] + mean[i]
         image = image.permute(1, 2, 0).detach().cpu().numpy()
+        # 叠加预测的掩膜
         pred = preds[index]
-        for i in range(preds.shape[0]):
+        mask = np.zeros([pred.shape[1], pred.shape[2], 3])
+        for i in range(pred.shape[0]):
             pred_0 = pred[i] * class_color[i][0]
             pred_1 = pred[i] * class_color[i][1]
             pred_2 = pred[i] * class_color[i][2]
-            mask = np.stack([pred_0, pred_1, pred_2], axis=2)
-            image_pred = image + mask
+            mask += np.stack([pred_0, pred_1, pred_2], axis=2)
+        image_pred = image + mask
         cv2.imshow('predict', image_pred)
-
+        # 叠加真实掩膜
         if flag:
             target = targets[index]
+            mask = torch.zeros(3, target.size(1), target.size(2))
             for i in range(target.size(0)):
                 target_0 = target[i] * class_color[i][0]
                 target_1 = target[i] * class_color[i][1]
                 target_2 = target[i] * class_color[i][2]
-                mask = torch.stack([target_0, target_1, target_2], dim=0)
-                image_target = image + mask.permute(1, 2, 0).cpu().numpy()
+                mask += torch.stack([target_0, target_1, target_2], dim=0)
+            image_target = image + mask.permute(1, 2, 0).cpu().numpy()
             cv2.imshow('target', image_target)
-        cv2.waitKey(0)
+        if auto_flag:
+            cv2.waitKey(240)
+        else:
+            cv2.waitKey(0)
 
 
 if __name__ == "__main__":
-    sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
-    test_data_folder = 'datasets/Steel_data/test_images'
-    ckpt_path = 'checkpoints/unet_resnet34/unet_resnet34_fold0_best.pth'
-
+    config = get_config()
     # 设置超参数
-    model_name = 'unet_resnet34'
-    # initialize test dataloader
-    best_threshold = 0.5
-    num_workers = 2
-    batch_size = 4
-    min_size = 3500
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    print('best_threshold', best_threshold)
 
-    model = get_model(model_name, ckpt_path)
-    # test_seg_predict(best_threshold, min_size, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model)
+    # 在哪一折的验证集上进行验证
+    fold = 1
+    # 是否显示真实的mask
+    show_truemask_flag = True
+    # 加载哪几折的模型进行测试，若list中有多个值，则使用投票法
+    n_splits = [1]  # [0, 1, 2, 3, 4]
+    # 是否只使用分割模型
+    use_segment_only = True
+    # 是否使用自动显示
+    auto_flag = True
 
-    data_folder = "datasets/Steel_data"
-    df_path = "datasets/Steel_data/train.csv"
-    dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, 5)
-    for fold_index, [train_dataloader, val_dataloader] in enumerate(dataloader):
-        train_seg_predict(best_threshold, min_size, mean, std, val_dataloader, model)
+    # 测试数据集的dataloader
+    sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
+    test_data_folder = 'datasets/Steel_data/test_images'
+    df = pd.read_csv(sample_submission_path)
+    test_loader = DataLoader(
+        TestDataset(test_data_folder, df, mean, std),
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        pin_memory=True
+    )
+
+    # 加载验证集的dataloader
+    dataloaders = provider(config.dataset_root, os.path.join(config.dataset_root, 'train.csv'), mean, std, config.batch_size, config.num_workers, config.n_splits)
+    valid_loader = dataloaders[fold][1]
+
+    if show_truemask_flag:
+        dataloader = valid_loader
+    else:
+        dataloader = test_loader
+    demo(n_splits, use_segment_only, config.model_name, mean, std, show_truemask_flag, dataloader, \
+         model_path='./checkpoints/'+config.model_name, auto_flag=auto_flag)
 
 

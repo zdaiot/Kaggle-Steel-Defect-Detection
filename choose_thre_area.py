@@ -48,7 +48,7 @@ class ChooseThresholdMinArea():
             best_minareas_little: 每一个类别的最优最小连通取余
             max_dices_little: 每一个类别的最大dice值
         '''
-        init_thresholds_range, init_minarea_range = np.arange(0.60, 0.81, 0.03), np.arange(768, 2305, 256)
+        init_thresholds_range, init_minarea_range = np.arange(0.50, 0.71, 0.03), np.arange(768, 2305, 256)
 
         # 阈值列表和最小连通域列表，大小为 Nx4
         thresholds_table_big = np.array([init_thresholds_range, init_thresholds_range, \
@@ -72,7 +72,7 @@ class ChooseThresholdMinArea():
         best_thresholds_little, best_minareas_little, max_dices_little = self.grid_search(thresholds_table_little, minareas_table_little, axes[1,:], cmap)
         print('best_thresholds_little:{}, best_minareas_little:{}, max_dices_little:{}'.format(best_thresholds_little, best_minareas_little, max_dices_little))
 
-        f.savefig(os.path.join(self.save_path, self.model_name + '_fold'+str(self.fold)))
+        f.savefig(os.path.join(self.save_path, self.model_name + '_fold'+str(self.fold)), bbox_inches='tight')
         # plt.show()
         plt.close()
 
