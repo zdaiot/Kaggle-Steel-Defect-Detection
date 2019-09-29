@@ -44,7 +44,7 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
     '''
     # 加载数据集
     df = pd.read_csv(sample_submission_path)
-    testset = DataLoader(
+    test_loader = DataLoader(
         TestDataset(test_data_folder, df, mean, std),
         batch_size=batch_size,
         shuffle=False,
@@ -54,11 +54,11 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
     if len(n_splits) == 1:
         classify_segment = Classify_Segment_Fold(model_name, n_splits[0], model_path).classify_segment
     else:
-        classify_segment = Classify_Segment_Folds(model_name, n_splits, model_path, testset).classify_segment_folds
+        classify_segment = Classify_Segment_Folds(model_name, n_splits, model_path).classify_segment_folds
 
     # start prediction
     predictions = []
-    for i, (fnames, images) in enumerate(tqdm(testset)):
+    for i, (fnames, images) in enumerate(tqdm(test_loader)):
         results = classify_segment(images).detach().cpu().numpy()
 
         for fname, preds in zip(fnames, results):
