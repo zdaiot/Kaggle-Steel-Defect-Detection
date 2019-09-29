@@ -7,3 +7,4 @@ checkpoints/
 submission.csv
 *.json
 kaggle/
+.fuse_hidde*
