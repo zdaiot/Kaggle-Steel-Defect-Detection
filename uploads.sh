@@ -20,8 +20,8 @@ fi
 # 删除已有的文件
 rm kaggle/sources/*.py -f
 rm kaggle/sources/*/*.py -f
-rm checkpoints/$model_name/*_best.pth -f
-rm checkpoints/$model_name/result.json -f
+rm kaggle/$model_name/*_best.pth -f
+rm kaggle/$model_name/result.json -f
 
 # 复制脚本文件
 cp models/model.py kaggle/sources/models
