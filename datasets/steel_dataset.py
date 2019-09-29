@@ -18,7 +18,6 @@ sys.path.append('.')
 from utils.data_augmentation import data_augmentation
 from utils.rle_parse import mask2rle, make_mask
 from utils.visualize import image_with_mask_torch
-import pickle
 warnings.filterwarnings("ignore")
 
 

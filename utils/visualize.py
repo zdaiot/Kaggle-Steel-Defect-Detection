@@ -1,7 +1,5 @@
 # 可视化操作
-import cv2
 import torch
-from PIL import Image
 import numpy as np
 
 

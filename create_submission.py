@@ -8,7 +8,7 @@ kaggle = 0
 if kaggle:
     os.system('pip install /kaggle/input/segmentation-models/pretrainedmodels-0.7.4/ > /dev/null')
     os.system('pip install /kaggle/input/segmentation-models/segmentation_models.pytorch/ > /dev/null')
-    package_path = 'kaggle/input/sources' # add unet script dataset
+    package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
     sys.path.append(package_path)
 from datasets.steel_dataset import TestDataset
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     n_splits = [1] # [0, 1, 2, 3, 4]
 
     if kaggle:
-        sample_submission_path = 'kaggel/input/severstal-steel-defect-detection/sample_submission.csv'
-        test_data_folder = "kaggle/input/severstal-steel-defect-detection/test_images"
-        model_path = 'kaggle/input/checkpoints'
+        sample_submission_path = '/kaggle/input/severstal-steel-defect-detection/sample_submission.csv'
+        test_data_folder = "/kaggle/input/severstal-steel-defect-detection/test_images"
+        model_path = '/kaggle/input/checkpoints'
     else:
         sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
         test_data_folder = 'datasets/Steel_data/test_images'
