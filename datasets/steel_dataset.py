@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, sampler
 from torchvision import transforms
 from albumentations import (HorizontalFlip, VerticalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
-from albumentations.torch import ToTensor
+from albumentations.pytorch import ToTensor
 import sys
 
 sys.path.append('.')
