@@ -91,7 +91,7 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
         for fname, preds in zip(fnames, results):
             for cls, pred in enumerate(preds):
                 rle = mask2rle(pred)
-                name = fname + str(cls+1)
+                name = fname + '_' + str(cls+1)
                 predictions.append([name, rle])
 
     # save predictions to submission.csv
