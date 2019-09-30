@@ -8,7 +8,7 @@ from models.model import Model, ClassifyResNet
 
 
 class Get_Classify_Results():
-    def __init__(self, model_name, fold, model_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4, tta_flag=False):
         ''' 处理当前fold一个batch的数据分类结果
 
         :param model_name: 当前的模型名称
@@ -20,7 +20,8 @@ class Get_Classify_Results():
         self.fold = fold
         self.model_path = model_path
         self.class_num = class_num
-
+        self.tta_flag = tta_flag
+        
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # 加载模型及其权重
         self.classify_model = ClassifyResNet(model_name, encoder_weights=None)
@@ -41,13 +42,16 @@ class Get_Classify_Results():
         :param thrshold: 分类模型的阈值
         :return: predict_classes: 一个batch的数据经过分类模型后的结果，维度为[batch, class_num]
         '''
-        predict_classes = self.solver.forward(images)
+        if self.tta_flag:
+            predict_classes = self.solver.tta(images, seg=False)
+        else:
+            predict_classes = self.solver.forward(images)
         predict_classes = predict_classes > thrshold
         return predict_classes
 
 
 class Get_Segment_Results():
-    def __init__(self, model_name, fold, model_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4, tta_flag=False):
         ''' 处理当前fold一个batch的数据分割结果
 
         :param model_name: 当前的模型名称
@@ -59,6 +63,7 @@ class Get_Segment_Results():
         self.fold = fold
         self.model_path = model_path
         self.class_num = class_num
+        self.tta_flag = tta_flag
 
         # 加载模型及其权重
         self.segment_model = Model(self.model_name, encoder_weights=None).create_model()
@@ -77,7 +82,10 @@ class Get_Segment_Results():
         :param images: 一个batch的数据，维度为[batch, channels, height, width]
         :return: predict_masks: 一个batch的数据经过分割网络后得到的预测结果，维度为[batch, class_num, height, width]
         '''
-        predict_masks = self.solver.forward(images)
+        if self.tta_flag:
+            predict_masks = self.solver.tta(images)
+        else:
+            predict_masks = self.solver.forward(images)
         for index, predict_masks_classes in enumerate(predict_masks):
             for each_class, pred in enumerate(predict_masks_classes):
                 pred_binary, _ = self.post_process(pred.detach().cpu().numpy(), self.best_thresholds[each_class], self.best_minareas[each_class])
@@ -113,7 +121,7 @@ class Get_Segment_Results():
 
 
 class Classify_Segment_Fold():
-    def __init__(self, model_name, fold, model_path, class_num=4):
+    def __init__(self, model_name, fold, model_path, class_num=4, tta_flag=False):
         ''' 处理当前fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
@@ -126,8 +134,8 @@ class Classify_Segment_Fold():
         self.model_path = model_path
         self.class_num = class_num
 
-        self.classify_model = Get_Classify_Results(self.model_name, self.fold, self.model_path, self.class_num)
-        self.segment_model = Get_Segment_Results(self.model_name, self.fold, self.model_path, self.class_num)
+        self.classify_model = Get_Classify_Results(self.model_name, self.fold, self.model_path, self.class_num, tta_flag=tta_flag)
+        self.segment_model = Get_Segment_Results(self.model_name, self.fold, self.model_path, self.class_num, tta_flag=tta_flag)
 
     def classify_segment(self, images):
         ''' 处理当前fold一个batch的分割结果和分类结果
@@ -147,7 +155,7 @@ class Classify_Segment_Fold():
 
 
 class Classify_Segment_Folds():
-    def __init__(self, model_name, n_splits, model_path, class_num=4):
+    def __init__(self, model_name, n_splits, model_path, class_num=4, tta_flag=False):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
@@ -159,6 +167,7 @@ class Classify_Segment_Folds():
         self.n_splits = n_splits
         self.model_path = model_path
         self.class_num = class_num
+        self.tta_flag = tta_flag
 
         self.classify_models, self.segment_models = list(), list()
         self.get_classify_segment_models()
@@ -168,8 +177,8 @@ class Classify_Segment_Folds():
         '''
 
         for fold in self.n_splits:
-            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num))
-            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num))
+            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
+            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
 
     def classify_segment_folds(self, images):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
@@ -196,7 +205,7 @@ class Classify_Segment_Folds():
 
 
 class Segment_Folds():
-    def __init__(self, model_name, n_splits, model_path, class_num=4):
+    def __init__(self, model_name, n_splits, model_path, class_num=4, tta_flag=False):
         ''' 使用投票法处理所有fold一个batch的分割结果
 
         :param model_name: 当前的模型名称
@@ -208,6 +217,7 @@ class Segment_Folds():
         self.n_splits = n_splits
         self.model_path = model_path
         self.class_num = class_num
+        self.tta_flag = tta_flag
 
         self.segment_models = list()
         self.get_segment_models()
@@ -217,7 +227,7 @@ class Segment_Folds():
         '''
 
         for fold in self.n_splits:
-            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num))
+            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
 
     def segment_folds(self, images):
         ''' 使用投票法处理所有fold一个batch的分割结果

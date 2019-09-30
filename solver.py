@@ -31,6 +31,36 @@ class Solver():
         outputs = self.model(images)
         return outputs
 
+    def tta(self, images, seg=True):
+        """测试时数据增强
+
+        Args:
+            images: [batch_size, channel, height, width]
+            seg: 分类还是分割，默认为分割
+        Return:
+
+        """
+        images = images.to(self.device)
+        # 原图
+        pred_origin = self.model(images)
+        preds = torch.zeros_like(pred_origin)
+        # 水平翻转
+        images_hflp = torch.flip(images, dims=[3])
+        pred_hflip = self.model(images_hflp)
+        # 垂直翻转
+        images_vflip = torch.flip(images, dims=[2])
+        pred_vflip = self.model(images_vflip)
+
+        if seg:
+            # 分割需要将预测结果翻转回去
+            pred_hflip = torch.flip(pred_hflip, dims=[3])
+            pred_vflip = torch.flip(pred_vflip, dims=[2])
+        preds = preds + pred_origin + pred_hflip + pred_vflip
+        # 求平均
+        pred = preds / 3.0
+
+        return pred
+
     def cal_loss(self, targets, predicts, criterion):
         ''' 根据真实类标和预测出的类标计算损失
         

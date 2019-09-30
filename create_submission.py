@@ -55,7 +55,7 @@ def mask2rle(img):
     return ' '.join(str(x) for x in runs)
 
 
-def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path):
+def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path, tta_flag=False):
     '''
 
     :param n_splits: 折数，类型为list
@@ -67,6 +67,7 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
     :param test_data_folder: 测试数据存放的路径
     :param sample_submission_path: 提交样例csv存放的路径
     :param model_path: 当前模型权重存放的目录
+    :param tta_flag: 是否使用tta
     :return: None
     '''
     # 加载数据集
@@ -79,9 +80,9 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
         pin_memory=True
     )
     if len(n_splits) == 1:
-        classify_segment = Classify_Segment_Fold(model_name, n_splits[0], model_path).classify_segment
+        classify_segment = Classify_Segment_Fold(model_name, n_splits[0], model_path, tta_flag=tta_flag).classify_segment
     else:
-        classify_segment = Classify_Segment_Folds(model_name, n_splits, model_path).classify_segment_folds
+        classify_segment = Classify_Segment_Folds(model_name, n_splits, model_path, tta_flag=tta_flag).classify_segment_folds
 
     # start prediction
     predictions = []
@@ -103,10 +104,11 @@ if __name__ == "__main__":
     # 设置超参数
     model_name = 'unet_resnet34'
     num_workers = 12
-    batch_size = 8
+    batch_size = 6
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     n_splits = [1] # [0, 1, 2, 3, 4]
+    tta_flag = False
 
     if kaggle:
         sample_submission_path = '/kaggle/input/severstal-steel-defect-detection/sample_submission.csv'
@@ -118,4 +120,4 @@ if __name__ == "__main__":
         model_path = './checkpoints/' + model_name
 
     create_submission(n_splits, model_name, batch_size, num_workers, mean, std, test_data_folder,
-                      sample_submission_path, model_path)
+                      sample_submission_path, model_path, tta_flag=tta_flag)
