@@ -86,7 +86,7 @@ if __name__ == "__main__":
     model = ClassifyResNet('unet_resnet34', 4, training=False)
     model = torch.nn.DataParallel(model)
     model = model.cuda()
-    pth_path = "checkpoints/unet_resnet34/unet_resnet34_classify_fold2.pth"
+    pth_path = "checkpoints/unet_resnet34/unet_resnet34_classify_fold1.pth"
     checkpoint = torch.load(pth_path)
     model.module.load_state_dict(checkpoint['state_dict'])
 
@@ -136,6 +136,6 @@ if __name__ == "__main__":
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     image = cv2.putText(image, str(i), position, font, 1.2, color, 2)
             cv2.imshow('win', image)
-            cv2.waitKey(30)
+            cv2.waitKey(240)
         print("Accuracy: %.4f" % (num_true / number_sample))
     pass

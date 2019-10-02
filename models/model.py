@@ -72,7 +72,14 @@ class ClassifyResNet(Module):
         model = Model(model_name, encoder_weights=encoder_weights, class_num=class_num).create_model_cpu()
         # 注意模型里面必须包含 encoder 模块
         self.encoder = model.encoder
-        self.feature = nn.Conv2d(512, 32, kernel_size=1)
+        if model_name == 'unet_resnet34':
+            self.feature = nn.Conv2d(512, 32, kernel_size=1)
+        elif model_name == 'unet_se_resnext50_32x4d':
+            self.feature = nn.Sequential(
+                nn.Conv2d(2048, 512, kernel_size=1),
+                nn.ReLU(),
+                nn.Conv2d(512, 32, kernel_size=1)
+            )
         self.logit = nn.Conv2d(32, self.class_num, kernel_size=1)
 
         self.training = training
@@ -89,7 +96,7 @@ class ClassifyResNet(Module):
 
 if __name__ == "__main__":
     # test segment 模型
-    model_name = 'unet_resnet34'
+    model_name = 'unet_se_resnext50_32x4d'
     model = Model(model_name).create_model()
     print(model)
 

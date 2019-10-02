@@ -12,7 +12,7 @@ from models.model import Model
 from utils.cal_dice_iou import Meter
 from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
-from config import get_config
+from config import get_seg_config
 from solver import Solver
 
 class TrainVal():
@@ -144,7 +144,7 @@ class TrainVal():
 
 
 if __name__ == "__main__":
-    config = get_config()
+    config = get_seg_config()
     mean=(0.485, 0.456, 0.406)
     std=(0.229, 0.224, 0.225)
     dataloaders = provider(config.dataset_root, os.path.join(config.dataset_root, 'train.csv'), mean, std, config.batch_size, config.num_workers, config.n_splits)

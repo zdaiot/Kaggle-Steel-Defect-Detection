@@ -14,8 +14,8 @@ from albumentations import (
 )
 
 sys.path.append('.')
-from .visualize import image_with_mask_torch, image_with_mask_numpy
-from .rle_parse import make_mask
+from utils.visualize import image_with_mask_torch, image_with_mask_numpy
+from utils.rle_parse import make_mask
 
 
 def visualize(image, mask, original_image=None, original_mask=None):
@@ -57,9 +57,9 @@ def data_augmentation(original_image, original_mask):
     augmentations = Compose([
         HorizontalFlip(p=0.4),
         VerticalFlip(p=0.4),
-        ShiftScaleRotate(shift_limit=0, rotate_limit=8, p=0.4),
+        ShiftScaleRotate(shift_limit=0.07, rotate_limit=0, p=0.4),
         # 直方图均衡化
-        CLAHE(p=0.4),
+        CLAHE(p=0.3),
 
         # 亮度、对比度
         RandomGamma(gamma_limit=(80, 120), p=0.1),
@@ -86,8 +86,8 @@ def data_augmentation(original_image, original_mask):
 
 
 if __name__ == "__main__":
-    data_folder = "../datasets/Steel_data"
-    df_path = "../datasets/Steel_data/train.csv"
+    data_folder = "datasets/Steel_data"
+    df_path = "datasets/Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     df = pd.read_csv(df_path)

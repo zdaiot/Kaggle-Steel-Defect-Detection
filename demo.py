@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 import cv2
 import os
-from config import get_config
+from config import get_seg_config
 from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold, Segment_Folds, Get_Segment_Results
 from datasets.steel_dataset import TestDataset, provider
 
@@ -94,7 +94,7 @@ def pred_show(images, preds, mean, std, targets=None, flag=False, auto_flag=Fals
 
 
 if __name__ == "__main__":
-    config = get_config()
+    config = get_seg_config()
     # 设置超参数
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # 是否只使用分割模型
     use_segment_only = True
     # 是否使用自动显示
-    auto_flag = True
+    auto_flag = False
 
     # 测试数据集的dataloader
     sample_submission_path = 'datasets/Steel_data/sample_submission.csv'

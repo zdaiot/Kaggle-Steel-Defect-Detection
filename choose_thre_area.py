@@ -13,7 +13,7 @@ from models.model import Model
 from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
 from utils.cal_dice_iou import compute_dice_class
-from config import get_config
+from config import get_seg_config
 
 
 class ChooseThresholdMinArea():
@@ -198,7 +198,7 @@ def get_model(model_name, load_path):
 
 
 if __name__ == "__main__":
-    config = get_config()
+    config = get_seg_config()
     mean=(0.485, 0.456, 0.406)
     std=(0.229, 0.224, 0.225)
     
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     # 存放权重的路径
     model_path = os.path.join(config.save_path, config.model_name)
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
-        if fold_index != 0:
+        if fold_index != 1:
             continue
 
         # 存放权重的路径+文件名
