@@ -24,6 +24,7 @@ def get_seg_config():
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
+        parser.add_argument('--mask_only_flag', type=bool, default=False, help='if true, use masked data only.')
 
         # model set 
         parser.add_argument('--model_name', type=str, default='unet_resnet34', \

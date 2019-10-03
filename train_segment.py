@@ -14,6 +14,8 @@ from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
 from config import get_seg_config
 from solver import Solver
+from utils.loss import MultiClassesSoftBCEDiceLoss
+
 
 class TrainVal():
     def __init__(self, config, fold):
@@ -36,7 +38,8 @@ class TrainVal():
         self.solver = Solver(self.model)
 
         # 加载损失函数
-        self.criterion = torch.nn.BCEWithLogitsLoss()
+        # self.criterion = torch.nn.BCEWithLogitsLoss()
+        self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[0.75, 0.25])
 
         # 创建保存权重的路径
         self.model_path = os.path.join(config.save_path, config.model_name)
@@ -145,9 +148,18 @@ class TrainVal():
 
 if __name__ == "__main__":
     config = get_seg_config()
-    mean=(0.485, 0.456, 0.406)
-    std=(0.229, 0.224, 0.225)
-    dataloaders = provider(config.dataset_root, os.path.join(config.dataset_root, 'train.csv'), mean, std, config.batch_size, config.num_workers, config.n_splits)
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    dataloaders = provider(
+        config.dataset_root, 
+        os.path.join(config.dataset_root, 'train.csv'),
+        mean, 
+        std,
+        config.batch_size, 
+        config.num_workers, 
+        config.n_splits, 
+        mask_only=config.mask_only_flag
+        )
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
         if fold_index != 1:
             continue

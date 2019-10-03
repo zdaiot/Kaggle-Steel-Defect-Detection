@@ -9,6 +9,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import torch
 from torch.utils.data import DataLoader, Dataset, sampler
+from torch.utils.data.dataloader import default_collate
 from torchvision import transforms
 from albumentations.pytorch import ToTensor
 import sys
@@ -127,6 +128,22 @@ def get_transforms(phase, image, mask, mean, std):
     return image, mask
 
 
+def mask_only_collate_fun(batch):
+    """自定义collate_fn函数，用于从一个batch中去除没有掩膜的样本
+    """
+    batch_scale = list()
+    for image, mask in batch:
+        pair = list()
+        mask_pixel_num = torch.sum(mask)
+        if mask_pixel_num > 0:
+            pair.append(image)
+            pair.append(mask)
+            batch_scale.append(pair)
+    batch_scale = default_collate(batch_scale)
+
+    return batch_scale
+
+
 def provider(
     data_folder,
     df_path,
@@ -135,6 +152,7 @@ def provider(
     batch_size=8,
     num_workers=4,
     n_splits=0,
+    mask_only=False
 ):
     """返回数据加载器，用于分割模型
 
@@ -146,6 +164,7 @@ def provider(
         batch_size
         num_workers
         n_split: 交叉验证折数，为1时不使用交叉验证
+        mask_only: 是否只在有掩膜的样本上训练分割模型
     
     Return:
         dataloadrs: list，该list中的每一个元素为list，元素list中保存训练集和验证集
@@ -175,20 +194,41 @@ def provider(
     for df_index, (train_df, val_df) in enumerate(zip(train_dfs, val_dfs)):
         train_dataset = SteelDataset(train_df, data_folder, mean, std, 'train')
         val_dataset = SteelDataset(val_df, data_folder, mean, std, 'val')
-        train_dataloader = DataLoader(
-            train_dataset, 
-            batch_size=batch_size, 
-            num_workers=num_workers, 
-            pin_memory=True, 
-            shuffle=True
+        if mask_only:
+            # 只在有掩膜的样本上训练
+            print('Segmentation modle: only masked data.')
+            train_dataloader = DataLoader(
+                train_dataset, 
+                batch_size=batch_size, 
+                num_workers=num_workers, 
+                collate_fn=mask_only_collate_fun,
+                pin_memory=True, 
+                shuffle=True
+                )
+            val_dataloader = DataLoader(
+                val_dataset,
+                batch_size=batch_size, 
+                num_workers=num_workers,
+                collate_fn=mask_only_collate_fun, 
+                pin_memory=True, 
+                shuffle=True
             )
-        val_dataloader = DataLoader(
-            val_dataset,
-            batch_size=batch_size, 
-            num_workers=num_workers, 
-            pin_memory=True, 
-            shuffle=True
-        )
+        else:    
+            print('Segmentation model: all data.')
+            train_dataloader = DataLoader(
+                train_dataset, 
+                batch_size=batch_size, 
+                num_workers=num_workers, 
+                pin_memory=True, 
+                shuffle=True
+                )
+            val_dataloader = DataLoader(
+                val_dataset,
+                batch_size=batch_size, 
+                num_workers=num_workers, 
+                pin_memory=True, 
+                shuffle=True
+            )
         dataloaders.append([train_dataloader, val_dataloader])
 
     return dataloaders
