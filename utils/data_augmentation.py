@@ -10,7 +10,7 @@ from albumentations import (
     RandomBrightness, RandomContrast, RandomGamma, OneOf,
     ToFloat, ShiftScaleRotate, GridDistortion, ElasticTransform, JpegCompression, HueSaturationValue,
     RGBShift, RandomBrightnessContrast, RandomContrast, Blur, MotionBlur, MedianBlur, GaussNoise,CenterCrop,
-    IAAAdditiveGaussianNoise,GaussNoise,Cutout,Rotate, Normalize
+    IAAAdditiveGaussianNoise,GaussNoise,Cutout,Rotate, Normalize, Crop, RandomCrop
 )
 
 sys.path.append('.')
@@ -44,7 +44,7 @@ def visualize(image, mask, original_image=None, original_mask=None):
         plt.show()
 
 
-def data_augmentation(original_image, original_mask):
+def data_augmentation(original_image, original_mask, crop=False, height=None, width=None):
     """进行样本和掩膜的随机增强
     
     Args:
@@ -78,6 +78,14 @@ def data_augmentation(original_image, original_mask):
             ], p=0.2)
     ])
     
+    if crop:
+        # 是否进行随机裁剪
+        assert height and width
+        crop_aug = RandomCrop(height=height, width=width, always_apply=True)
+        crop_sample = crop_aug(image=original_image, mask=original_mask)
+        original_image = crop_sample['image']
+        original_mask = crop_sample['mask']
+
     augmented = augmentations(image=original_image, mask=original_mask)
     image_aug = augmented['image']
     mask_aug = augmented['mask']
@@ -102,7 +110,7 @@ if __name__ == "__main__":
         image_id, mask = make_mask(index, df)
         image_path = os.path.join(data_folder, 'train_images', image_id)
         image = cv2.imread(image_path)
-        image_aug, mask_aug = data_augmentation(image, mask)
+        image_aug, mask_aug = data_augmentation(image, mask, crop=True, height=256, width=400)
         normalize = Normalize(mean=mean, std=std)
         image = normalize(image=image)['image']
         image_aug = normalize(image=image_aug)['image']

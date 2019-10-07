@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 
 # Dataset Segmentation
 class SteelDataset(Dataset):
-    def __init__(self, df, data_folder, mean, std, phase):
+    def __init__(self, df, data_folder, mean, std, phase, crop=False, height=None, width=None):
         super(SteelDataset, self).__init__()
         self.df = df
         self.root = data_folder
@@ -31,13 +31,16 @@ class SteelDataset(Dataset):
         self.std = std
         self.phase = phase
         self.transforms = get_transforms
+        self.crop = crop
+        self.height = height
+        self.width = width
         self.fnames = self.df.index.tolist()
 
     def __getitem__(self, idx):
         image_id, mask = make_mask(idx, self.df)
         image_path = os.path.join(self.root, "train_images",  image_id)
         img = cv2.imread(image_path)
-        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std)
+        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std, crop=self.crop, height=self.height, width=self.width)
         mask = mask.permute(2, 0, 1)
         return img, mask
 
@@ -47,7 +50,7 @@ class SteelDataset(Dataset):
 
 # Dataset Classification
 class SteelClassDataset(Dataset):
-    def __init__(self, df, data_folder, mean, std, phase):
+    def __init__(self, df, data_folder, mean, std, phase, crop=False, height=None, width=None):
         super(SteelClassDataset, self).__init__()
         self.df = df
         self.root = data_folder
@@ -55,13 +58,16 @@ class SteelClassDataset(Dataset):
         self.std = std
         self.phase = phase
         self.transforms = get_transforms
+        self.crop = crop
+        self.height = height
+        self.width = width
         self.fnames = self.df.index.tolist()
 
     def __getitem__(self, idx):
         image_id, mask = make_mask(idx, self.df)
         image_path = os.path.join(self.root, "train_images",  image_id)
         img = cv2.imread(image_path)
-        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std)
+        img, mask = self.transforms(self.phase, img, mask, self.mean, self.std, crop=self.crop, height=self.height, width=self.width)
         mask = mask.permute(2, 0, 1) # 4x256x1600
         mask = mask.view(mask.size(0), -1)
         mask = torch.sum(mask, dim=1)
@@ -99,7 +105,7 @@ class TestDataset(Dataset):
         return self.num_samples
 
 
-def augmentation(image, mask):
+def augmentation(image, mask, crop=False, height=None, width=None):
     """进行数据增强
     Args:
         image: 原始图像
@@ -108,16 +114,16 @@ def augmentation(image, mask):
         image_aug: 增强后的图像，Image图像
         mask: 增强后的掩膜，Image图像
     """
-    image_aug, mask_aug = data_augmentation(image, mask)
+    image_aug, mask_aug = data_augmentation(image, mask, crop=crop, height=height, width=width)
     image_aug = Image.fromarray(image_aug)
 
     return image_aug, mask_aug
 
 
-def get_transforms(phase, image, mask, mean, std):
+def get_transforms(phase, image, mask, mean, std, crop=False, height=None, width=None):
 
     if phase == 'train':
-        image, mask = augmentation(image, mask)
+        image, mask = augmentation(image, mask, crop=crop, height=height, width=width)
 
     to_tensor = transforms.ToTensor()
     normalize = transforms.Normalize(mean, std)
@@ -152,7 +158,10 @@ def provider(
     batch_size=8,
     num_workers=4,
     n_splits=0,
-    mask_only=False
+    mask_only=False,
+    crop=False, 
+    height=None,
+    width=None
 ):
     """返回数据加载器，用于分割模型
 
@@ -192,7 +201,7 @@ def provider(
     # 生成dataloader
     dataloaders = list()
     for df_index, (train_df, val_df) in enumerate(zip(train_dfs, val_dfs)):
-        train_dataset = SteelDataset(train_df, data_folder, mean, std, 'train')
+        train_dataset = SteelDataset(train_df, data_folder, mean, std, 'train', crop=crop, height=height, width=width)
         val_dataset = SteelDataset(val_df, data_folder, mean, std, 'val')
         if mask_only:
             # 只在有掩膜的样本上训练
@@ -242,6 +251,9 @@ def classify_provider(
     batch_size=8,
     num_workers=4,
     n_splits=0,
+    crop=False,
+    height=None,
+    width=False
 ):
     """返回数据加载器，用于分类模型
 
@@ -281,7 +293,7 @@ def classify_provider(
     # 生成dataloader
     dataloaders = list()
     for df_index, (train_df, val_df) in enumerate(zip(train_dfs, val_dfs)):
-        train_dataset = SteelClassDataset(train_df, data_folder, mean, std, 'train')
+        train_dataset = SteelClassDataset(train_df, data_folder, mean, std, 'train', crop=crop, height=height, width=width)
         val_dataset = SteelClassDataset(val_df, data_folder, mean, std, 'val')
         train_dataloader = DataLoader(
             train_dataset, 
@@ -303,15 +315,19 @@ def classify_provider(
 
 
 if __name__ == "__main__":
-    data_folder = "Steel_data"
-    df_path = "Steel_data/train.csv"
+    data_folder = "datasets/Steel_data"
+    df_path = "datasets/Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    batch_size = 8
+    batch_size = 12
     num_workers = 4
     n_splits = 1
+    mask_only = False
+    crop = True
+    height = 256
+    width = 512
     # 测试分割数据集
-    dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
+    dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits, mask_only=mask_only, crop=crop, height=height, width=width)
     for fold_index, [train_dataloader, val_dataloader] in enumerate(dataloader):
         train_bar = tqdm(train_dataloader)
         class_color = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [139, 0, 139]]
