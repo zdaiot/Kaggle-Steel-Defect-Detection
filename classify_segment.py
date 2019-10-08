@@ -204,6 +204,65 @@ class Classify_Segment_Folds():
         return results
 
 
+class Classify_Segment_Folds_Split():
+    def __init__(self, model_name, classify_folds, segment_folds, model_path, class_num=4, tta_flag=False):
+        ''' 首先的到分类模型的集成结果，再得到分割模型的集成结果，最后将两个结果进行融合
+
+        :param model_name: 当前的模型名称
+        :param classify_folds: 参与集成的分类模型的折序号，为list列表
+        :param segment_folds: 参与集成的分割模型的折序号，为list列表
+        :param model_path: 存放所有模型的路径
+        :param class_num: 类别总数
+        '''
+        self.model_name = model_name
+        self.classify_folds = classify_folds
+        self.segment_folds = segment_folds
+        self.model_path = model_path
+        self.class_num = class_num
+        self.tta_flag = tta_flag
+
+        self.classify_models, self.segment_models = list(), list()
+        self.get_classify_segment_models()
+
+    def get_classify_segment_models(self):
+        ''' 加载所有折的分割模型和分类模型
+        '''
+        for fold in self.classify_folds:
+            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
+        for fold in self.segment_folds:
+            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
+
+    def classify_segment_folds(self, images):
+        ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
+
+        :param images: 一个batch的数据，维度为[batch, channels, height, width]
+        :return: results，使用投票法处理所有fold一个batch的分割结果和分类结果，维度为[batch, class_num, height, width]
+        '''
+        classify_results = torch.zeros(images.shape[0], self.class_num)
+        segment_results = torch.zeros(images.shape[0], self.class_num, images.shape[2], images.shape[3])
+        # 得到分类结果
+        for classify_index, classify_model in enumerate(self.classify_models):
+            classify_result_fold = classify_model.get_classify_results(images)
+            classify_results += classify_result_fold.detach().cpu().squeeze().float()
+        classify_vote_model_num = len(self.classify_folds)
+        classify_vote_ticket = round(classify_vote_model_num / 2.0)
+        classify_results = classify_results > classify_vote_ticket
+
+        # 得到分割结果
+        for segment_index, segment_model in enumerate(self.segment_models):
+            segment_result_fold = segment_model.get_segment_results(images)
+            segment_results += segment_result_fold.detach().cpu()
+        segment_vote_model_num = len(self.segment_folds)
+        segment_vote_ticket = round(segment_vote_model_num / 2.0)
+        segment_results = segment_results > segment_vote_ticket
+
+        # 将分类结果和分割结果进行融合
+        for batch_index, classify_result in enumerate(classify_results):
+            segment_results[batch_index, 1-classify_result, ...] = 0
+
+        return segment_results
+
+
 class Segment_Folds():
     def __init__(self, model_name, n_splits, model_path, class_num=4, tta_flag=False):
         ''' 使用投票法处理所有fold一个batch的分割结果

@@ -19,7 +19,7 @@ def get_seg_config():
         hwp: 6
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=48, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=4, help='batch size')
         parser.add_argument('--epoch', type=int, default=65, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')

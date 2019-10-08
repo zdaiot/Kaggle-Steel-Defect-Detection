@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # 是否显示真实的mask
     show_truemask_flag = True
     # 加载哪几折的模型进行测试，若list中有多个值，则使用投票法
-    n_splits = [1]  # [0, 1, 2, 3, 4]
+    n_splits = [0, 1, 2, 3, 4]  # [0, 1, 2, 3, 4]
     # 是否只使用分割模型
     use_segment_only = True
     # 是否使用自动显示
