@@ -36,11 +36,17 @@ def demo(n_splits, use_segment_only, model_name, mean, std, show_truemask_flag, 
 
     # start prediction
     if show_truemask_flag:
-        for images, masks in tqdm(dataloader):
+        for samples in tqdm(dataloader):
+            if len(samples) == 0:
+                continue
+            images, masks = samples[0], samples[1]
             results = model(images).detach().cpu().numpy()
             pred_show(images, results, mean, std, targets=masks, flag=show_truemask_flag, auto_flag=auto_flag)
     else:
-        for fnames, images in tqdm(dataloader):
+        for fnames, samples in tqdm(dataloader):
+            if len(samples) == 0:
+                continue
+            images, masks = samples[0], samples[1]
             results = model(images).detach().cpu().numpy()
             pred_show(images, results, mean, std, targets=None, flag=show_truemask_flag, auto_flag=auto_flag)
 

@@ -76,7 +76,12 @@ When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter t
 ## TODO
 - [x] finish classify + segment model
 - [x] finish create_submission.py 
-- [ ] finish demo.py
-- [ ] finish loss.py
-- [ ] finish choose_threshold
-- [ ] finish data enhancement
+- [x] finish demo.py
+- [x] finish loss.py
+- [x] finish choose_threshold
+- [x] finish data augmentation
+- [ ] EfficientB4( w/ ASPP)
+- [ ] code review(validation dice, threshold dice)
+- [ ] choose fold
+- [ ] ensemble
+- [ ] early stopping automaticly

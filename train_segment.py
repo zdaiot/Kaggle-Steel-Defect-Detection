@@ -47,8 +47,8 @@ class TrainVal():
         self.solver = Solver(self.model)
 
         # 加载损失函数
-        self.criterion = torch.nn.BCEWithLogitsLoss()
-        # self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[0.75, 0.25])
+        # self.criterion = torch.nn.BCEWithLogitsLoss()
+        self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[1.0, 1.0])
 
         # 保存json文件和初始化tensorboard
         TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S-%d}".format(datetime.datetime.now(), fold)
@@ -94,13 +94,14 @@ class TrainVal():
 
                 # 保存到tensorboard，每一步存储一个
                 self.writer.add_scalar('train_loss', loss.item(), global_step+i)
-
-                descript = "Fold: %d, Train Loss: %.7f, lr: %.7f" % (self.fold, loss.item(), self.lr)
+                params_groups_lr = str()
+                for group_ind, param_group in enumerate(optimizer.param_groups):
+                    params_groups_lr = params_groups_lr + 'params_group_%d' % (group_ind) + ': %.12f, ' % (param_group['lr'])
+                descript = "Fold: %d, Train Loss: %.7f, lr: %s" % (self.fold, loss.item(), params_groups_lr)
                 tbar.set_description(desc=descript)
 
             # 每一个epoch完毕之后，执行学习率衰减
             lr_scheduler.step()
-            self.lr = lr_scheduler.get_lr()
             global_step += len(train_loader)
 
             # Print the log info
