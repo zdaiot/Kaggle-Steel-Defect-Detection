@@ -14,7 +14,7 @@ if kaggle:
     package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
     sys.path.append(package_path)
-from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold
+from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold, Classify_Segment_Folds_Split
 
 
 class TestDataset(Dataset):
@@ -55,10 +55,11 @@ def mask2rle(img):
     return ' '.join(str(x) for x in runs)
 
 
-def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path, tta_flag=False):
+def create_submission(classify_splits, seg_splits, model_name, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path, tta_flag=False):
     '''
 
-    :param n_splits: 折数，类型为list
+    :param classify_splits: 分类模型的折数，类型为list
+    :param seg_splits: 分割模型的折数，类型为list    
     :param model_name: 当前模型的名称
     :param batch_size: batch的大小
     :param num_workers: 加载数据的线程
@@ -79,10 +80,12 @@ def create_submission(n_splits, model_name, batch_size, num_workers, mean, std, 
         num_workers=num_workers,
         pin_memory=True
     )
-    if len(n_splits) == 1:
-        classify_segment = Classify_Segment_Fold(model_name, n_splits[0], model_path, tta_flag=tta_flag).classify_segment
-    else:
-        classify_segment = Classify_Segment_Folds(model_name, n_splits, model_path, tta_flag=tta_flag).classify_segment_folds
+    if len(classify_splits) == 1 and len(seg_splits) == 1:
+        classify_segment = Classify_Segment_Fold(model_name, classify_splits[0], model_path, tta_flag=tta_flag).classify_segment
+    elif len(classify_splits) == len(seg_splits):
+        classify_segment = Classify_Segment_Folds(model_name, classify_splits, model_path, tta_flag=tta_flag).classify_segment_folds
+    elif len(classify_splits) != len(seg_splits):
+        classify_segment = Classify_Segment_Folds_Split(model_name, classify_splits, seg_splits, model_path, tta_flag=tta_flag).classify_segment_folds
 
     # start prediction
     predictions = []
@@ -104,11 +107,12 @@ if __name__ == "__main__":
     # 设置超参数
     model_name = 'unet_resnet34'
     num_workers = 12
-    batch_size = 6
+    batch_size = 4
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    n_splits = [1] # [0, 1, 2, 3, 4]
-    tta_flag = False
+    classify_splits = [1] # [0, 1, 2, 3, 4]
+    segment_splits = [0, 1, 2, 3, 4]
+    tta_flag = True
 
     if kaggle:
         sample_submission_path = '/kaggle/input/severstal-steel-defect-detection/sample_submission.csv'
@@ -119,5 +123,5 @@ if __name__ == "__main__":
         test_data_folder = 'datasets/Steel_data/test_images'
         model_path = './checkpoints/' + model_name
 
-    create_submission(n_splits, model_name, batch_size, num_workers, mean, std, test_data_folder,
+    create_submission(classify_splits, segment_splits, model_name, batch_size, num_workers, mean, std, test_data_folder,
                       sample_submission_path, model_path, tta_flag=tta_flag)

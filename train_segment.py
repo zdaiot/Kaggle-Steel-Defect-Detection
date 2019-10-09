@@ -38,8 +38,8 @@ class TrainVal():
         self.solver = Solver(self.model)
 
         # 加载损失函数
-        # self.criterion = torch.nn.BCEWithLogitsLoss()
-        self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[0.75, 0.25])
+        self.criterion = torch.nn.BCEWithLogitsLoss()
+        # self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[0.75, 0.25])
 
         # 创建保存权重的路径
         self.model_path = os.path.join(config.save_path, config.model_name)
@@ -158,7 +158,10 @@ if __name__ == "__main__":
         config.batch_size, 
         config.num_workers, 
         config.n_splits, 
-        mask_only=config.mask_only_flag
+        mask_only=config.mask_only_flag,
+        crop=config.crop,
+        height=config.height,
+        width=config.width
         )
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
         if fold_index != 1:

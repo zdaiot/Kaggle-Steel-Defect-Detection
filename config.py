@@ -19,12 +19,15 @@ def get_seg_config():
         hwp: 6
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
-        parser.add_argument('--epoch', type=int, default=60, help='epoch')
+        parser.add_argument('--batch_size', type=int, default=4, help='batch size')
+        parser.add_argument('--epoch', type=int, default=65, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
         parser.add_argument('--mask_only_flag', type=bool, default=False, help='if true, use masked data only.')
+        parser.add_argument('--crop', type=bool, default=True, help='if true, crop image to [height, width].')
+        parser.add_argument('--height', type=int, default=256, help='the height of cropped image')
+        parser.add_argument('--width', type=int, default=512, help='the width of cropped image')
 
         # model set 
         parser.add_argument('--model_name', type=str, default='unet_resnet34', \
@@ -33,7 +36,7 @@ def get_seg_config():
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
         parser.add_argument('--num_workers', type=int, default=8)
-        parser.add_argument('--lr', type=float, default=4e-4, help='init lr')
+        parser.add_argument('--lr', type=float, default=1e-4, help='init lr')
         parser.add_argument('--weight_decay', type=float, default=0, help='weight_decay in optimizer')
         
         # dataset 
@@ -67,6 +70,9 @@ def get_classify_config():
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
+        parser.add_argument('--crop', type=bool, default=False, help='if true, crop image to [height, width].')
+        parser.add_argument('--height', type=int, default=256, help='the height of cropped image')
+        parser.add_argument('--width', type=int, default=512, help='the width of cropped image')
 
         # model set 
         parser.add_argument('--model_name', type=str, default='unet_resnet34', \
