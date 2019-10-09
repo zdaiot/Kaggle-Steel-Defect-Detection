@@ -1,21 +1,21 @@
 from torch import optim
 import torch
 import tqdm
-from config import get_classify_config
-from solver import Solver
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import os
 import codecs, json
 import time
+import pickle
 
+from config import get_classify_config
+from solver import Solver
 from models.model import ClassifyResNet
 from utils.loss import ClassifyLoss
 from datasets.steel_dataset import classify_provider
 from utils.cal_classify_accuracy import Meter
 from utils.set_seed import seed_torch
-import pickle
-import random
+from utils.easy_stopping import EarlyStopping
 
 
 class TrainVal():
@@ -67,6 +67,7 @@ class TrainVal():
         optimizer = optim.Adam(self.model.module.parameters(), self.lr, weight_decay=self.weight_decay)
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, self.epoch+10)
         global_step = 0
+        es = EarlyStopping(mode='min', patience=10)
 
         for epoch in range(self.epoch):
             epoch += 1
@@ -94,7 +95,12 @@ class TrainVal():
             global_step += len(train_loader)
 
             # Print the log info
-            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, epoch_loss/len(tbar)))
+            average_loss = epoch_loss / len(tbar)
+            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, average_loss))
+
+            # 提前终止
+            if es.step(average_loss):
+                break
 
             # 验证模型
             class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_valid = \

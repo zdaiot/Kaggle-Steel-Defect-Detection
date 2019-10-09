@@ -15,6 +15,7 @@ from utils.set_seed import seed_torch
 from config import get_seg_config
 from solver import Solver
 from utils.loss import MultiClassesSoftBCEDiceLoss
+from utils.easy_stopping import EarlyStopping
 
 
 class TrainVal():
@@ -75,6 +76,8 @@ class TrainVal():
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, self.epoch+10)
         global_step = 0
 
+        es = EarlyStopping(mode='min', patience=10)
+
         for epoch in range(self.epoch):
             epoch += 1
             epoch_loss = 0
@@ -105,7 +108,12 @@ class TrainVal():
             global_step += len(train_loader)
 
             # Print the log info
-            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, epoch_loss/len(tbar)))
+            average_loss = epoch_loss/len(tbar)
+            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, average_loss))
+
+            # 提前终止
+            if es.step(average_loss):
+                break
 
             # 验证模型
             loss_valid, dice_valid, iou_valid = self.validation(valid_loader)
