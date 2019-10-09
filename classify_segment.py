@@ -245,7 +245,7 @@ class Classify_Segment_Folds_Split():
         for fold in self.segment_folds:
             self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
 
-    def classify_segment_folds(self, images, average_strategy):
+    def classify_segment_folds(self, images, average_strategy=False):
         ''' 使用投票法或者平均法处理所有fold一个batch的分割结果和分类结果
 
         :param images: 一个batch的数据，维度为[batch, channels, height, width]
