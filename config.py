@@ -16,7 +16,7 @@ def get_seg_config():
         unet_resnet34时各个电脑可以设置的最大batch size
         zdaiot:12 z840:16 mxq:24
         unet_se_renext50
-        hwp: 6
+        hwp: 6 MXQ: 12
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
         parser.add_argument('--batch_size', type=int, default=12, help='batch size')

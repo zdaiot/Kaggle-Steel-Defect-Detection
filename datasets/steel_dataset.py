@@ -185,7 +185,7 @@ def provider(
     # https://www.kaggle.com/amanooo/defect-detection-starter-u-net
     df['ImageId'], df['ClassId'] = zip(*df['ImageId_ClassId'].str.split('_'))
     df['ClassId'] = df['ClassId'].astype(int)
-    df = df.pivot(index='ImageId',columns='ClassId',values='EncodedPixels')
+    df = df.pivot(index='ImageId', columns='ClassId', values='EncodedPixels')
     df['defects'] = df.count(axis=1)
     
     # 将数据集划分为n_split份
@@ -318,8 +318,8 @@ def classify_provider(
 
 
 if __name__ == "__main__":
-    data_folder = "datasets/Steel_data"
-    df_path = "datasets/Steel_data/train.csv"
+    data_folder = "./Steel_data"
+    df_path = "./Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     batch_size = 12
