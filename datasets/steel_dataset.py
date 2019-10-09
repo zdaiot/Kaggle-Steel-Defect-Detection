@@ -145,7 +145,10 @@ def mask_only_collate_fun(batch):
             pair.append(image)
             pair.append(mask)
             batch_scale.append(pair)
-    batch_scale = default_collate(batch_scale)
+    if len(batch_scale) > 0:
+        batch_scale = default_collate(batch_scale)
+    else:
+        batch_scale = torch.tensor(batch_scale)
 
     return batch_scale
 

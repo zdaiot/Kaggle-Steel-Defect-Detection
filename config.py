@@ -19,8 +19,8 @@ def get_seg_config():
         hwp: 6
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
-        parser.add_argument('--epoch', type=int, default=70, help='epoch')
+        parser.add_argument('--batch_size', type=int, default=12, help='batch size')
+        parser.add_argument('--epoch', type=int, default=50, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
@@ -30,14 +30,14 @@ def get_seg_config():
         parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
+        parser.add_argument('--model_name', type=str, default='unet_se_resnext50_32x4d', \
             help='unet_resnet34/unet_se_resnext50_32x4d')
 
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
-        parser.add_argument('--resume', type=str, default='unet_resnet34_classify_fold1_best.pth', help='Resuming from specified weight')
+        parser.add_argument('--resume', type=str, default=0, help='Resuming from specified weight')
         parser.add_argument('--num_workers', type=int, default=8)
-        parser.add_argument('--lr', type=float, default=1e-6, help='init lr')
+        parser.add_argument('--lr', type=float, default=4e-5, help='init lr')
         parser.add_argument('--weight_decay', type=float, default=0, help='weight_decay in optimizer')
         
         # dataset 

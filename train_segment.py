@@ -81,7 +81,11 @@ class TrainVal():
             self.model.train(True)
 
             tbar = tqdm.tqdm(train_loader)
-            for i, (images, masks) in enumerate(tbar):
+            for i, samples in enumerate(tbar):
+                # 样本为空则跳过
+                if len(samples) == 0:
+                    continue
+                images, masks = samples[0], samples[1]
                 # 网络的前向传播与反向传播，损失函数中包含了sigmoid函数
                 masks_predict = self.solver.forward(images)
                 loss = self.solver.cal_loss(masks, masks_predict, self.criterion)
@@ -130,7 +134,10 @@ class TrainVal():
         loss_sum = 0
         
         with torch.no_grad(): 
-            for i, (images, masks) in enumerate(tbar):
+            for i, samples in enumerate(tbar):
+                if len(samples) == 0:
+                    continue
+                images, masks = samples[0], samples[1]
                 # 完成网络的前向传播
                 masks_predict = self.solver.forward(images)
                 loss = self.solver.cal_loss(masks, masks_predict, self.criterion)

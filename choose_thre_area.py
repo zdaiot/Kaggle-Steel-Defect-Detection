@@ -96,7 +96,10 @@ class ChooseThresholdMinArea():
         dices_table = np.zeros((self.class_num, np.shape(thresholds_table)[1], np.shape(minareas_table)[1]))
         tbar = tqdm.tqdm(self.valid_loader)
         with torch.no_grad():
-            for i, (images, masks) in enumerate(tbar):
+            for i, samples in enumerate(tbar):
+                if len(samples) == 0:
+                    continue
+                images, masks = samples[0], samples[1]
                 # 完成网络的前向传播
                 masks_predict_allclasses = self.solver.forward(images)
                 dices_table += self.grid_search_batch(thresholds_table, minareas_table, masks_predict_allclasses, masks)
