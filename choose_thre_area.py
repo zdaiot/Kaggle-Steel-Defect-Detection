@@ -210,6 +210,8 @@ if __name__ == "__main__":
     results = {}
     # 存放权重的路径
     model_path = os.path.join(config.save_path, config.model_name)
+    best_thresholds_sum, best_minareas_sum, max_dices_sum = [0 for x in range(len(dataloaders))], \
+                                                            [0 for x in range(len(dataloaders))], [0 for x in range(len(dataloaders))]
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
         if fold_index != 1:
             continue
@@ -221,8 +223,14 @@ if __name__ == "__main__":
         mychoose_threshold_minarea = ChooseThresholdMinArea(model, config.model_name, valid_loader, fold_index, model_path)
         best_thresholds, best_minareas, max_dices = mychoose_threshold_minarea.choose_threshold_minarea()
         result = {'best_thresholds': best_thresholds, 'best_minareas': best_minareas, 'max_dices': max_dices}
-
         results[str(fold_index)] = result
+
+        best_thresholds_sum = [x+y for x,y in zip(best_thresholds_sum, best_thresholds)]
+        best_minareas_sum = [x+y for x,y in zip(best_minareas_sum, best_minareas)]
+        max_dices_sum = [x+y for x,y in zip(max_dices_sum, max_dices)]
+    best_thresholds_average, best_minareas_average, max_dices_average = [x/len(dataloaders) for x in best_thresholds_sum], \
+                                                                        [x/len(dataloaders) for x in best_minareas_sum], [x/len(dataloaders) for x in max_dices_sum]
+    results['mean'] = {'best_thresholds': best_thresholds_average, 'best_minareas': best_minareas_average, 'max_dices': max_dices_average}
     with codecs.open(model_path + '/result.json', 'w', "utf-8") as json_file:
         json.dump(results, json_file, ensure_ascii=False)
 

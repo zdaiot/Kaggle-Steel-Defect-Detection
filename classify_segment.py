@@ -23,7 +23,7 @@ def post_process(probability, threshold, min_size):
 
 
 def get_thresholds_minareas(json_path, fold=None):
-    ''' 得到各个类别的特定fold的最优像素阈值和最优最小连通域
+    ''' 得到各个类别的特定fold的最优像素阈值和最优最小连通域或者所有fold的平均最优像素阈值和平均最优最小连通域
 
     :param json_path: 要加载的json路径
     :param fold: 要加载哪一折的结果，当fold为None的时候，返回的是平均值
