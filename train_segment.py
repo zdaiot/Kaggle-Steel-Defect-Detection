@@ -34,17 +34,21 @@ class TrainVal():
         self.epoch = config.epoch
         self.fold = fold
 
+        # 创建保存权重的路径
+        self.model_path = os.path.join(config.save_path, config.model_name)
+        if not os.path.exists(self.model_path):
+            os.makedirs(self.model_path)
+        
+        if config.resume:
+            weight_path = os.path.join(self.model_path, config.resume)
+            self.load_weight(weight_path)
+
         # 实例化实现各种子函数的 solver 类
         self.solver = Solver(self.model)
 
         # 加载损失函数
         self.criterion = torch.nn.BCEWithLogitsLoss()
         # self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=4, size_average=True, weight=[0.75, 0.25])
-
-        # 创建保存权重的路径
-        self.model_path = os.path.join(config.save_path, config.model_name)
-        if not os.path.exists(self.model_path):
-            os.makedirs(self.model_path)
 
         # 保存json文件和初始化tensorboard
         TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S-%d}".format(datetime.datetime.now(), fold)
@@ -144,6 +148,16 @@ class TrainVal():
         dice, dice_neg, dice_pos = dices
         print("IoU: %0.4f | dice: %0.4f | dice_neg: %0.4f | dice_pos: %0.4f" % (iou, dice, dice_neg, dice_pos))
         return loss_mean, dice, iou
+    
+    def load_weight(self, weight_path):
+        """加载权重
+        """
+        pretrained_state_dict = torch.load(weight_path)['state_dict']
+        model_state_dict = self.model.module.state_dict()
+        pretrained_state_dict = {k : v for k, v in pretrained_state_dict.items() if k in model_state_dict}
+        model_state_dict.update(pretrained_state_dict)
+        print('Loading weight from %s' % weight_path)
+        self.model.module.load_state_dict(model_state_dict)
 
 
 if __name__ == "__main__":

@@ -50,14 +50,20 @@ class Solver():
         # 垂直翻转
         images_vflip = torch.flip(images, dims=[2])
         pred_vflip = self.model(images_vflip)
+        # 水平加垂直翻转
+        images_hvflip = torch.flip(images, dims=[3])
+        images_hvflip = torch.flip(images_hvflip, dims=[2])
+        pred_hvflip = self.model(images_hvflip)
 
         if seg:
             # 分割需要将预测结果翻转回去
             pred_hflip = torch.flip(pred_hflip, dims=[3])
             pred_vflip = torch.flip(pred_vflip, dims=[2])
-        preds = preds + pred_origin + pred_hflip + pred_vflip
+            pred_hvflip = torch.flip(pred_hvflip, dims=[2])
+            pred_hvflip = torch.flip(pred_hvflip, dims=[3])
+        preds = preds + pred_origin + pred_hflip + pred_vflip + pred_hvflip
         # 求平均
-        pred = preds / 3.0
+        pred = preds / 4.0
 
         return pred
 

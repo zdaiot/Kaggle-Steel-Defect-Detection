@@ -206,7 +206,7 @@ class Classify_Segment_Folds():
 
 class Classify_Segment_Folds_Split():
     def __init__(self, model_name, classify_folds, segment_folds, model_path, class_num=4, tta_flag=False):
-        ''' 首先的到分类模型的集成结果，再得到分割模型的集成结果，最后将两个结果进行融合
+        ''' 首先得到分类模型的集成结果，再得到分割模型的集成结果，最后将两个结果进行融合
 
         :param model_name: 当前的模型名称
         :param classify_folds: 参与集成的分类模型的折序号，为list列表
@@ -258,7 +258,7 @@ class Classify_Segment_Folds_Split():
 
         # 将分类结果和分割结果进行融合
         for batch_index, classify_result in enumerate(classify_results):
-            segment_results[batch_index, 1-classify_result, ...] = 0
+            segment_results[batch_index, ~classify_result, ...] = 0
 
         return segment_results
 
