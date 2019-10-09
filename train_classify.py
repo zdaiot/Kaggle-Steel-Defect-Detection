@@ -84,11 +84,12 @@ class TrainVal():
                 # 保存到tensorboard，每一步存储一个
                 self.writer.add_scalar('train_loss', loss.item(), global_step+i)
 
-                descript = "Fold: %d, Train Loss: %.7f, lr: %s" % (self.fold, loss.item(), self.lr)
+                descript = "Fold: %d, Train Loss: %.7f, lr: %.7f" % (self.fold, loss.item(), self.lr)
                 tbar.set_description(desc=descript)
 
             # 每一个epoch完毕之后，执行学习率衰减
             lr_scheduler.step()
+            self.lr = lr_scheduler.get_lr()
             global_step += len(train_loader)
 
             # Print the log info
