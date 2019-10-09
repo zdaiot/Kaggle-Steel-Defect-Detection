@@ -123,7 +123,7 @@ class SoftBCEDiceLoss(nn.Module):
     def forward(self, input, target):
         soft_bce_loss = self.bce_loss(input, target)
         soft_dice_loss = self.softdiceloss(input, target)
-        loss = soft_bce_loss + soft_dice_loss
+        loss = 5.0 * soft_bce_loss + soft_dice_loss
 
         return loss
 
