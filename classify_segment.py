@@ -7,6 +7,40 @@ from solver import Solver
 from models.model import Model, ClassifyResNet
 
 
+def post_process(probability, threshold, min_size):
+    '''Post processing of each predicted mask, components with lesser number of pixels
+    than `min_size` are ignored'''
+    mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
+    num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
+    predictions = np.zeros((256, 1600), np.float32)
+    num = 0
+    for c in range(1, num_component):
+        p = (component == c)
+        if p.sum() > min_size:
+            predictions[p] = 1
+            num += 1
+    return predictions, num
+
+
+def get_thresholds_minareas(json_path, fold=None):
+    ''' 得到各个类别的特定fold的最优像素阈值和最优最小连通域
+
+    :param json_path: 要加载的json路径
+    :param fold: 要加载哪一折的结果，当fold为None的时候，返回的是平均值
+    :return: thresholds: 当fold为非None的时候，返回特定fold各个类别的最优像素阈值，类型为list；
+                         当fold为None的时候，返回所有fold各个类别的最优像素阈值的平均值，类型为list
+    :return: minareas: 当fold为非None的时候，返回特定fold各个类别的最优最小连通域，类型为list
+                         当fold为None的时候，返回所有fold各个类别的最优最小连通域的平均值，类型为list
+    '''
+    with open(json_path, encoding='utf-8') as json_file:
+        result = json.load(json_file)
+    if fold != None:
+        thresholds, minareas = result[str(fold)]['best_thresholds'], result[str(fold)]['best_minareas']
+    else:
+        thresholds, minareas = result['mean']['best_thresholds'], result['mean']['best_minareas']
+    return thresholds, minareas
+
+
 class Get_Classify_Results():
     def __init__(self, model_name, fold, model_path, class_num=4, tta_flag=False):
         ''' 处理当前fold一个batch的数据分类结果
@@ -74,50 +108,29 @@ class Get_Segment_Results():
 
         # 加载存放像素阈值和连通域的json文件
         self.json_path = os.path.join(self.model_path, 'result.json')
-        self.best_thresholds, self.best_minareas = self.get_thresholds_minareas(self.json_path, self.fold)
+        self.best_thresholds, self.best_minareas = get_thresholds_minareas(self.json_path, self.fold)
 
-    def get_segment_results(self, images):
+    def get_segment_results(self, images, process_flag=True):
         ''' 处理当前fold一个batch的数据分割结果
 
         :param images: 一个batch的数据，维度为[batch, channels, height, width]
-        :return: predict_masks: 一个batch的数据经过分割网络后得到的预测结果，维度为[batch, class_num, height, width]
+        :param process_flag: 是否经过像素阈值和最小连通域
+        :return: predict_masks: 一个batch的数据经过分割网络后得到的预测结果，维度为[batch, class_num, height, width]。
+            当 process_flag=True 的时候，返回的结果经过了阈值以及最小连通域，得到的 predict_masks 为二值化的
+            当 process_flag=False 的时候，返回的结果未经过阈值以及最小连通域，得到的 predict_masks 为非二值化的，值处于 [0, 1] 之间
         '''
+        # 得到的维度为[batch, class_num, height, width]
         if self.tta_flag:
             predict_masks = self.solver.tta(images)
         else:
             predict_masks = self.solver.forward(images)
-        for index, predict_masks_classes in enumerate(predict_masks):
-            for each_class, pred in enumerate(predict_masks_classes):
-                pred_binary, _ = self.post_process(pred.detach().cpu().numpy(), self.best_thresholds[each_class], self.best_minareas[each_class])
-                predict_masks[index, each_class] = torch.from_numpy(pred_binary)
+        # 是否需要经过阈值以及像素阈值，默认经过
+        if process_flag:
+            for index, predict_masks_classes in enumerate(predict_masks):
+                for each_class, pred in enumerate(predict_masks_classes):
+                    pred_binary, _ = post_process(pred.detach().cpu().numpy(), self.best_thresholds[each_class], self.best_minareas[each_class])
+                    predict_masks[index, each_class] = torch.from_numpy(pred_binary)
         return predict_masks
-
-    def post_process(self, probability, threshold, min_size):
-        '''Post processing of each predicted mask, components with lesser number of pixels
-        than `min_size` are ignored'''
-        mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
-        num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
-        predictions = np.zeros((256, 1600), np.float32)
-        num = 0
-        for c in range(1, num_component):
-            p = (component == c)
-            if p.sum() > min_size:
-                predictions[p] = 1
-                num += 1
-        return predictions, num
-
-    def get_thresholds_minareas(self, json_path, fold):
-        ''' 得到各个类别的特定fold的最优像素阈值和最优最小连通域
-
-        :param json_path: 要加载的json路径
-        :param fold: 要加载哪一折的结果
-        :return: best_thresholds: 各个类别的最优像素阈值，类型为list
-        :return: best_minareas: 各个类别的最优最小连通域，类型为list
-        '''
-        with open(json_path, encoding='utf-8') as json_file:
-            result = json.load(json_file)
-        best_thresholds, best_minareas = result[str(fold)]['best_thresholds'], result[str(fold)]['best_minareas']
-        return best_thresholds, best_minareas
 
 
 class Classify_Segment_Fold():
@@ -232,11 +245,12 @@ class Classify_Segment_Folds_Split():
         for fold in self.segment_folds:
             self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
 
-    def classify_segment_folds(self, images):
-        ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
+    def classify_segment_folds(self, images, average_strategy):
+        ''' 使用投票法或者平均法处理所有fold一个batch的分割结果和分类结果
 
         :param images: 一个batch的数据，维度为[batch, channels, height, width]
-        :return: results，使用投票法处理所有fold一个batch的分割结果和分类结果，维度为[batch, class_num, height, width]
+        :param average_strategy: 当为True的时候，使用平均策略；当为False的时候，使用投票策略
+        :return: results，使用投票法或者平均法处理所有fold一个batch的分割结果和分类结果，维度为[batch, class_num, height, width]
         '''
         classify_results = torch.zeros(images.shape[0], self.class_num)
         segment_results = torch.zeros(images.shape[0], self.class_num, images.shape[2], images.shape[3])
@@ -249,12 +263,25 @@ class Classify_Segment_Folds_Split():
         classify_results = classify_results > classify_vote_ticket
 
         # 得到分割结果
-        for segment_index, segment_model in enumerate(self.segment_models):
-            segment_result_fold = segment_model.get_segment_results(images)
-            segment_results += segment_result_fold.detach().cpu()
-        segment_vote_model_num = len(self.segment_folds)
-        segment_vote_ticket = round(segment_vote_model_num / 2.0)
-        segment_results = segment_results > segment_vote_ticket
+        # 如果采用平均策略的话
+        if average_strategy:
+            for segment_index, segment_model in enumerate(self.segment_models):
+                segment_result_fold = segment_model.get_segment_results(images, process_flag=False)
+                segment_results += segment_result_fold.detach().cpu()
+            average_thresholds, average_minareas = get_thresholds_minareas(os.path.join(self.model_path, 'result.json'))
+            segment_results = segment_results/len(self.segment_folds)
+            for index, predict_masks_classes in enumerate(segment_results):
+                for each_class, pred in enumerate(predict_masks_classes):
+                    pred_binary, _ = post_process(pred.detach().cpu().numpy(), average_thresholds[each_class], average_minareas[each_class])
+                    segment_results[index, each_class] = torch.from_numpy(pred_binary)
+        # 如果采用投票策略的话
+        else:
+            for segment_index, segment_model in enumerate(self.segment_models):
+                segment_result_fold = segment_model.get_segment_results(images)
+                segment_results += segment_result_fold.detach().cpu()
+            segment_vote_model_num = len(self.segment_folds)
+            segment_vote_ticket = round(segment_vote_model_num / 2.0)
+            segment_results = segment_results > segment_vote_ticket
 
         # 将分类结果和分割结果进行融合
         for batch_index, classify_result in enumerate(classify_results):
