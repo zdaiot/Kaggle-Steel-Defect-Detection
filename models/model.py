@@ -84,6 +84,12 @@ class ClassifyResNet(Module):
                 nn.ReLU(),
                 nn.Conv2d(512, 32, kernel_size=1)
             )
+        elif model_name == 'unet_efficientnet_b4':
+            self.feature = nn.Sequential(
+                nn.Conv2d(448, 160, kernel_size=1),
+                nn.ReLU(),
+                nn.Conv2d(160, 32, kernel_size=1)
+            )
         self.logit = nn.Conv2d(32, self.class_num, kernel_size=1)
 
         self.training = training
@@ -101,8 +107,10 @@ class ClassifyResNet(Module):
 if __name__ == "__main__":
     # test segment 模型
     model_name = 'unet_efficientnet_b4'
-    model = Model(model_name).create_model()
-    print(model)
+    model = Model(model_name, class_num=4).create_model_cpu()
+    x = torch.Tensor(5, 3, 256, 1600)
+    x = model.encoder(x)
+    # print(model)
 
     # test classify 模型
     class_net = ClassifyResNet(model_name, 4)
