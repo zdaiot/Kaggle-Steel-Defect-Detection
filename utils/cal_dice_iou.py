@@ -10,33 +10,43 @@ def predict(X, threshold):
 
 
 def metric(probability, truth, threshold=0.5, reduction='none'):
-    '''Calculates dice of positive and negative images seperately'''
-    '''probability and truth must be torch tensors'''
+    """Calculates dice of positive and negative images seperately
+
+    probability and truth must be torch tensors, 维度为[batch, class_num, height, width]
+    """
+
     batch_size = len(truth)
     with torch.no_grad():
         probability = probability.view(batch_size, -1)
         truth = truth.view(batch_size, -1)
         assert(probability.shape == truth.shape)
 
+        # 将两者经过阈值变为二值数据
         p = (probability > threshold).float()
         t = (truth > 0.5).float()
 
         t_sum = t.sum(-1)
         p_sum = p.sum(-1)
+        # torch.nonzero：返回输入二维张量中非零元素的索引，类型为张量，输出张量中的每行为两个元素，代表输入二维张量中非零元素的行列索引
+        # 如果某个样本对应的真实掩模全部元素均为零，则该样本为负样本；否则的话则为正样本。
         neg_index = torch.nonzero(t_sum == 0)
         pos_index = torch.nonzero(t_sum >= 1)
 
         dice_neg = (p_sum == 0).float()
         dice_pos = 2 * (p*t).sum(-1)/((p+t).sum(-1))
 
+        # 当预测为neg，且真实为neg的时候，计算dice_neg；当预测为pos，且真实为pos的时候，计算dice_pos
+        # 对于其余情况，dice均为零，所以可以不考虑
         dice_neg = dice_neg[neg_index]
         dice_pos = dice_pos[pos_index]
         dice = torch.cat([dice_pos, dice_neg])
 
+        # 求一个batch内的平均dice_neg, dice_pos, dice；并且使用零填充nan值
         dice_neg = np.nan_to_num(dice_neg.mean().item(), 0)
         dice_pos = np.nan_to_num(dice_pos.mean().item(), 0)
         dice = dice.mean().item()
 
+        # 该batch中，真实有多少个负样本和正样本
         num_neg = len(neg_index)
         num_pos = len(pos_index)
 
@@ -53,11 +63,18 @@ class Meter:
         self.iou_scores = []
 
     def update(self, targets, outputs):
+        """
+        :param targets: 真实掩模，维度为[batch, class_num, height, width]
+        :param outputs: 预测出的掩模，维度为[batch, class_num, height, width]
+        :return: None
+        """
         probs = torch.sigmoid(outputs)
+        # 计算一系列的指标
         dice, dice_neg, dice_pos, _, _ = metric(probs, targets, self.base_threshold)
         self.base_dice_scores.append(dice)
         self.dice_pos_scores.append(dice_pos)
         self.dice_neg_scores.append(dice_neg)
+        # 经过阈值后，计算IOU值
         preds = predict(probs, self.base_threshold)
         iou = compute_iou_batch(preds, targets, classes=[1])
         self.iou_scores.append(iou)
@@ -67,6 +84,7 @@ class Meter:
         dice_neg = np.mean(self.dice_neg_scores)
         dice_pos = np.mean(self.dice_pos_scores)
         dices = [dice, dice_neg, dice_pos]
+        # np.nanmean：Compute the arithmetic mean along the specified axis, ignoring NaNs.
         iou = np.nanmean(self.iou_scores)
         return dices, iou
 
@@ -80,7 +98,13 @@ def epoch_log(epoch, epoch_loss, meter, start):
 
 
 def compute_ious(pred, label, classes, ignore_index=255, only_present=True):
-    '''computes iou for one ground truth mask and predicted mask'''
+    """computes iou for one ground truth mask and predicted mask
+    :param pred: 预测出的掩模，维度为[class_num, height, width]，二值化数据
+    :param label: 真实掩模，维度为[class_num, height, width]，二值化数据
+    注意使用该函数计算IOU的时候，pred要在外部经过阈值二值化
+
+    该函数并没有考虑真实和预测均为负样本的情况
+    """
     pred[label == ignore_index] = 0
     ious = []
     for c in classes:
@@ -91,6 +115,7 @@ def compute_ious(pred, label, classes, ignore_index=255, only_present=True):
         pred_c = pred == c
         intersection = np.logical_and(pred_c, label_c).sum()
         union = np.logical_or(pred_c, label_c).sum()
+        # 上面的 continue部分
         if union != 0:
             ious.append(intersection / union)
     return ious if ious else [1]
@@ -101,7 +126,9 @@ def compute_iou_batch(outputs, labels, classes=None):
     ious = []
     preds = np.copy(outputs) # copy is imp
     labels = np.array(labels) # tensor to np
+    # 对于每一个样本的真实掩模以及预测掩模
     for pred, label in zip(preds, labels):
+        # np.nanmean：Compute the arithmetic mean along the specified axis, ignoring NaNs.
         ious.append(np.nanmean(compute_ious(pred, label, classes)))
     iou = np.nanmean(ious)
     return iou
