@@ -48,6 +48,10 @@ class Model():
         elif self.model_name == 'unet_dpn68':
             model = smp.Unet('dpn68', encoder_weights=self.encoder_weights, classes=self.class_num, activation=None)
 
+        # Unet Efficient 系列
+        elif self.model_name == 'unet_efficientnet_b4':
+            model = smp.Unet('efficientnet-b4', encoder_weights=self.encoder_weights, classes=self.class_num, activation=None)
+
         return model
 
     def create_model(self):
@@ -96,7 +100,7 @@ class ClassifyResNet(Module):
 
 if __name__ == "__main__":
     # test segment 模型
-    model_name = 'unet_se_resnext50_32x4d'
+    model_name = 'unet_efficientnet_b4'
     model = Model(model_name).create_model()
     print(model)
 
