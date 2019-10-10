@@ -49,8 +49,8 @@ class TrainVal():
         self.solver = Solver(self.model)
 
         # 加载损失函数
-        # self.criterion = torch.nn.BCEWithLogitsLoss()
-        self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=self.class_num, size_average=True, weight=[1.0, 1.0])
+        self.criterion = torch.nn.BCEWithLogitsLoss()
+        # self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=self.class_num, size_average=True, weight=[1.0, 1.0])
 
         # 保存json文件和初始化tensorboard
         TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S-%d}".format(datetime.datetime.now(), fold)

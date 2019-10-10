@@ -14,12 +14,18 @@ def get_seg_config():
         parser = argparse.ArgumentParser()
         '''
         unet_resnet34时各个电脑可以设置的最大batch size
-        zdaiot:12 z840:16 mxq:24
+        zdaiot:12 
+        z840:16 
+        mxq:24
         unet_se_renext50
-        hwp: 6 MXQ: 12
+        hwp: 6 
+        MXQ: 12
+        unet_efficientnet_b4
+        MXQ: 
+
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=6, help='batch size')
         parser.add_argument('--epoch', type=int, default=65, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
@@ -30,8 +36,8 @@ def get_seg_config():
         parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
-            help='unet_resnet34/unet_se_resnext50_32x4d')
+        parser.add_argument('--model_name', type=str, default='unet_efficientnet_b4', \
+            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4')
 
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
@@ -64,9 +70,11 @@ def get_classify_config():
         zdaiot:12 z840:16 mxq:48
         unet_se_renext50
         hwp: 8
+        unet_efficientnet_b4
+        MXQ: 8
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=48, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=8, help='batch size')
         parser.add_argument('--epoch', type=int, default=30, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
@@ -76,8 +84,8 @@ def get_classify_config():
         parser.add_argument('--width', type=int, default=512, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
-            help='unet_resnet34/unet_se_resnext50_32x4d')
+        parser.add_argument('--model_name', type=str, default='unet_efficientnet_b4', \
+            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4')
 
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
