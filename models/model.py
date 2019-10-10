@@ -78,6 +78,12 @@ class ClassifyResNet(Module):
         self.encoder = model.encoder
         if model_name == 'unet_resnet34':
             self.feature = nn.Conv2d(512, 32, kernel_size=1)
+        elif model_name == 'unet_resnet50':
+            self.feature = nn.Sequential(
+                nn.Conv2d(2048, 512, kernel_size=1),
+                nn.ReLU(),
+                nn.Conv2d(512, 32, kernel_size=1)
+            )
         elif model_name == 'unet_se_resnext50_32x4d':
             self.feature = nn.Sequential(
                 nn.Conv2d(2048, 512, kernel_size=1),
@@ -106,7 +112,7 @@ class ClassifyResNet(Module):
 
 if __name__ == "__main__":
     # test segment 模型
-    model_name = 'unet_efficientnet_b4'
+    model_name = 'unet_resnet50'
     model = Model(model_name, class_num=4).create_model_cpu()
     x = torch.Tensor(5, 3, 256, 1600)
     x = model.encoder(x)
