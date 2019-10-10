@@ -10,6 +10,7 @@ import cv2
 kaggle = 0
 if kaggle:
     os.system('pip install /kaggle/input/segmentation_models/pretrainedmodels-0.7.4/ > /dev/null')
+    os.system('pip install /kaggle/input/segmentation_models/EfficientNet-PyTorch/ > /dev/null')
     os.system('pip install /kaggle/input/segmentation_models/segmentation_models.pytorch/ > /dev/null')
     package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
