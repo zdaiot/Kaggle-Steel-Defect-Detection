@@ -133,7 +133,7 @@ class TrainVal():
             self.writer.add_scalar('valid_loss', loss_valid, epoch)
             self.writer.add_scalar('valid_dice', dice_valid, epoch)
             for each_class, dice_class in enumerate(dice_classes):
-                self.writer.add_scalar('valid_dice_class{}'.format(each_class), dice_class, epoch)
+                self.writer.add_scalar('valid_dice_class{}'.format(each_class+1), dice_class, epoch)
 
     def validation(self, valid_loader):
         ''' 完成模型的验证过程
