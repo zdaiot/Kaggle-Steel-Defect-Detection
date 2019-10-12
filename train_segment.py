@@ -117,7 +117,7 @@ class TrainVal():
                 break
 
             # 验证模型
-            loss_valid, dice_valid = self.validation(valid_loader)
+            loss_valid, dice_valid, dice_classes = self.validation(valid_loader)
             if dice_valid > self.max_dice_valid: 
                 is_best = True
                 self.max_dice_valid = dice_valid
@@ -132,6 +132,8 @@ class TrainVal():
             self.solver.save_checkpoint(os.path.join(self.model_path, '%s_fold%d.pth' % (self.model_name, self.fold)), state, is_best)
             self.writer.add_scalar('valid_loss', loss_valid, epoch)
             self.writer.add_scalar('valid_dice', dice_valid, epoch)
+            for each_class, dice_class in enumerate(dice_classes):
+                self.writer.add_scalar('valid_dice_class{}'.format(each_class), dice_class, epoch)
 
     def validation(self, valid_loader):
         ''' 完成模型的验证过程
@@ -141,11 +143,13 @@ class TrainVal():
 
         :return loss_mean: 验证集上的loss平均值
         :return dice_mean: 验证集上的各类dice平均值
+        :return dice_classes: 验证集上各类的dice值
         '''
         self.model.eval()
         tbar = tqdm.tqdm(valid_loader)
         loss_sum, dice_sum = 0, 0
-        
+
+        sum_classes = [0 for i in range(self.class_num)]
         with torch.no_grad(): 
             for i, samples in enumerate(tbar):
                 if len(samples) == 0:
@@ -162,13 +166,17 @@ class TrainVal():
                     masks_predict_oneclass = masks_predict_binary[:, each_class, ...]
                     masks_oneclasses = masks[:, each_class, ...]
                     dice = compute_dice_class(masks_predict_oneclass.float(), masks_oneclasses)
+                    sum_classes[each_class] += dice
                     dice_sum += dice
                 descript = "Val Loss: {:.7f}".format(loss.item())
                 tbar.set_description(desc=descript)
         loss_mean = loss_sum/len(tbar)
         dice_mean = dice_sum/len(tbar)/self.class_num
-        print("loss_mean: %0.4f, dice_mean: %0.4f" % (loss_mean, dice_mean))
-        return loss_mean, dice_mean
+        dice_classes = [x/len(tbar) for x in sum_classes]
+        print("loss_mean: %0.4f, dice_mean: %0.4f, dice_first_class:  %0.4f, dice_second_class:  %0.4f, \
+            dice_third_class:  %0.4f, dice_forth_class:  %0.4f" % (loss_mean, dice_mean, dice_classes[0], \
+                dice_classes[1], dice_classes[2], dice_classes[3]))
+        return loss_mean, dice_mean, dice_classes
     
     def load_weight(self, weight_path):
         """加载权重
