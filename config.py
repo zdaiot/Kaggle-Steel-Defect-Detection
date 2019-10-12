@@ -21,12 +21,12 @@ def get_seg_config():
         hwp: 6 
         MXQ: 12
         unet_efficientnet_b4
-        MXQ: 
+        MXQ: 6
 
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
         parser.add_argument('--batch_size', type=int, default=6, help='batch size')
-        parser.add_argument('--epoch', type=int, default=65, help='epoch')
+        parser.add_argument('--epoch', type=int, default=50, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
