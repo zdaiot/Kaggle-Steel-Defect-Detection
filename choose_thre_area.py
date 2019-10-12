@@ -8,6 +8,7 @@ import pandas as pd
 import codecs
 import json
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 from solver import Solver
 from models.model import Model
 from datasets.steel_dataset import provider
