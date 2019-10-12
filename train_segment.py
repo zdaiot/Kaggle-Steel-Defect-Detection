@@ -173,9 +173,8 @@ class TrainVal():
         loss_mean = loss_sum/len(tbar)
         dice_mean = dice_sum/len(tbar)/self.class_num
         dice_classes = [x/len(tbar) for x in sum_classes]
-        print("loss_mean: %0.4f, dice_mean: %0.4f, dice_first_class:  %0.4f, dice_second_class:  %0.4f, \
-            dice_third_class:  %0.4f, dice_forth_class:  %0.4f" % (loss_mean, dice_mean, dice_classes[0], \
-                dice_classes[1], dice_classes[2], dice_classes[3]))
+        print("loss_mean: %0.4f, dice_mean: %0.4f, dice_first_class: %0.4f, dice_second_class: %0.4f, dice_third_class: %0.4f, dice_forth_class: %0.4f" \
+            % (loss_mean, dice_mean, dice_classes[0], dice_classes[1], dice_classes[2], dice_classes[3]))
         return loss_mean, dice_mean, dice_classes
     
     def load_weight(self, weight_path):
