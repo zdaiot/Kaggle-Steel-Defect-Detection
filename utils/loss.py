@@ -80,46 +80,61 @@ class SoftDiceLoss(nn.Module):
         return loss
 
 
+# reference https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation/discussion/101429#latest-588288
+class SoftBceLoss(nn.Module):
+    """二分类交叉熵加权损失
+    """
+    def __init__(self, weight=[0.25, 0.75]):
+        super(SoftBceLoss, self).__init__()
+        self.weight = weight
+
+    def forward(self, logit_pixel, truth_pixel):
+        logit = logit_pixel.view(-1)
+        truth = truth_pixel.view(-1)
+        assert(logit.shape==truth.shape)
+
+        loss = F.binary_cross_entropy_with_logits(logit, truth, reduction='none')
+        if self.weight:
+            pos = (truth>0.5).float()
+            neg = (truth<0.5).float()
+            # pos_weight = pos.sum().item() + 1e-12
+            # neg_weight = neg.sum().item() + 1e-12
+            # loss = (self.weight[0]*pos*loss/pos_weight + self.weight[1]*neg*loss/neg_weight).sum()
+            loss = (self.weight[1]*pos*loss + self.weight[0]*neg*loss).mean()
+        else:
+            loss = loss.mean()
+        return loss
+
+
 class SoftBCEDiceLoss(nn.Module):
     """加权BCE+DiceLoss
     """
-    def __init__(self, size_average=True, weight=[1.0, 1.0]):
+    def __init__(self, size_average=True, weight=[0.2, 0.8]):
         """
         weight: weight[0]为负类的权重，weight[1]为正类的权重
         """
         super(SoftBCEDiceLoss, self).__init__()
         self.size_average = size_average
         self.weight = weight
-        self.bce_loss = nn.BCEWithLogitsLoss(size_average=self.size_average, pos_weight=torch.tensor(weight[0]))
+        self.bce_loss = nn.BCEWithLogitsLoss(size_average=self.size_average, pos_weight=torch.tensor(self.weight[1]))
         # self.bce_loss = SoftBceLoss(weight=weight)
         self.softdiceloss = SoftDiceLoss(size_average=self.size_average, weight=weight)
     
     def forward(self, input, target):
         soft_bce_loss = self.bce_loss(input, target)
         soft_dice_loss = self.softdiceloss(input, target)
-        loss = 0.85 * soft_bce_loss + 0.15 * soft_dice_loss
+        loss = 0.7 * soft_bce_loss + 0.3 * soft_dice_loss
 
         return loss
 
 
 class MultiClassesSoftBCEDiceLoss(nn.Module):
-    def __init__(self, classes_num=4, size_average=True, weight=[[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0]], class_weight=[0.3, 0.2, 0.3, 0.2]):
-        """
-
-        Args:
-            weight: 正负样本权重
-            class_weight: 类别间权重
-        """
+    def __init__(self, classes_num=4, size_average=True, weight=[0.2, 0.8]):
         super(MultiClassesSoftBCEDiceLoss, self).__init__()
         self.classes_num = classes_num
         self.size_average = size_average
-        self.class_weight = class_weight
-        self.soft_bce_dice_loss = [
-            SoftBCEDiceLoss(size_average=self.size_average, weight=weight[0]),
-            SoftBCEDiceLoss(size_average=self.size_average, weight=weight[1]),
-            SoftBCEDiceLoss(size_average=self.size_average, weight=weight[2]),
-            SoftBCEDiceLoss(size_average=self.size_average, weight=weight[3]),
-            ]
+        self.weight = weight
+        self.soft_bce_dice_loss = SoftBCEDiceLoss(size_average=self.size_average, weight=self.weight)
     
     def forward(self, input, target):
         """
@@ -131,26 +146,10 @@ class MultiClassesSoftBCEDiceLoss(nn.Module):
         for class_index in range(self.classes_num):
             input_single_class = input[:, class_index, :, :]
             target_singlt_class = target[:, class_index, :, :]
-            single_class_loss = self.soft_bce_dice_loss[class_index](input_single_class, target_singlt_class)
-            loss += self.class_weight[class_index] * single_class_loss
-
-        return loss
-
-
-class MultiClassBCELoss(nn.Module):
-    def __init__(self, class_num=4, class_weight=[0.3, 0.2, 0.3, 0.2]):
-        super(MultiClassBCELoss, self).__init__()
-        self.bce_loss = nn.BCEWithLogitsLoss()
-        self.class_num = class_num
-        self.class_weight = class_weight
-    
-    def forward(self, input, target):
-        loss = 0
-        for class_index in range(self.class_num):
-            input_single_class = input[:, class_index, :, :]
-            target_singlt_class = target[:, class_index, :, :]
-            single_class_loss = self.bce_loss(input_single_class, target_singlt_class)
-            loss += self.class_weight[class_index] * single_class_loss
+            single_class_loss = self.soft_bce_dice_loss(input_single_class, target_singlt_class)
+            loss += single_class_loss
+        
+        loss /= self.classes_num
 
         return loss
 
@@ -158,6 +157,6 @@ class MultiClassBCELoss(nn.Module):
 if __name__ == "__main__":
     input = torch.Tensor(4, 4, 256, 1600)
     target = torch.Tensor(4, 4, 256, 1600)
-    criterion = MultiClassBCELoss(4)
+    criterion = MultiClassesSoftBCEDiceLoss(4, True)
     loss = criterion(input, target)
 

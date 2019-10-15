@@ -10,9 +10,8 @@ import cv2
 kaggle = 0
 if kaggle:
     os.system('pip install /kaggle/input/segmentation_models/pretrainedmodels-0.7.4/ > /dev/null')
-    os.system('pip install /kaggle/input/segmentation_models/EfficientNet-PyTorch/ > /dev/null')
     os.system('pip install /kaggle/input/segmentation_models/segmentation_models.pytorch/ > /dev/null')
-    package_path = '/kaggle/input/sources'  # add unet script dataset
+    package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
     sys.path.append(package_path)
 from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold, Classify_Segment_Folds_Split
@@ -92,10 +91,7 @@ def create_submission(classify_splits, seg_splits, model_name, batch_size, num_w
     # start prediction
     predictions = []
     for i, (fnames, images) in enumerate(tqdm(test_loader)):
-        if len(classify_splits) != len(seg_splits):
-            results = classify_segment(images, average_strategy=average_strategy).detach().cpu().numpy()
-        else:
-            results = classify_segment(images).detach().cpu().numpy()
+        results = classify_segment(images, average_strategy=average_strategy).detach().cpu().numpy()
 
         for fname, preds in zip(fnames, results):
             for cls, pred in enumerate(preds):
@@ -110,13 +106,13 @@ def create_submission(classify_splits, seg_splits, model_name, batch_size, num_w
 
 if __name__ == "__main__":
     # 设置超参数
-    model_name = 'unet_efficientnet_b4'
+    model_name = 'unet_resnet34'
     num_workers = 12
-    batch_size = 1
+    batch_size = 4
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    classify_splits = [1]# [0, 1, 2, 3, 4]
-    segment_splits = [1]
+    classify_splits = [1] # [0, 1, 2, 3, 4]
+    segment_splits = [0, 1, 2, 3, 4]
     tta_flag = True
     average_strategy = False
 

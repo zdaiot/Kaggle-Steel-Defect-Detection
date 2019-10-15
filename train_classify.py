@@ -1,21 +1,21 @@
 from torch import optim
 import torch
 import tqdm
+from config import get_classify_config
+from solver import Solver
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import os
 import codecs, json
 import time
-import pickle
 
-from config import get_classify_config
-from solver import Solver
 from models.model import ClassifyResNet
 from utils.loss import ClassifyLoss
 from datasets.steel_dataset import classify_provider
 from utils.cal_classify_accuracy import Meter
 from utils.set_seed import seed_torch
-from utils.easy_stopping import EarlyStopping
+import pickle
+import random
 
 
 class TrainVal():
@@ -94,8 +94,7 @@ class TrainVal():
             global_step += len(train_loader)
 
             # Print the log info
-            average_loss = epoch_loss / len(tbar)
-            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, average_loss))
+            print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, epoch_loss/len(tbar)))
 
             # 验证模型
             class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_valid = \
@@ -155,8 +154,8 @@ class TrainVal():
 
 if __name__ == "__main__":
     config = get_classify_config()
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
+    mean=(0.485, 0.456, 0.406)
+    std=(0.229, 0.224, 0.225)
     dataloaders = classify_provider(
         config.dataset_root, 
         os.path.join(config.dataset_root, 'train.csv'), 

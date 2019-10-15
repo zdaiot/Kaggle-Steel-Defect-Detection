@@ -47,11 +47,10 @@ class Model():
         # Unet dpn 系列
         elif self.model_name == 'unet_dpn68':
             model = smp.Unet('dpn68', encoder_weights=self.encoder_weights, classes=self.class_num, activation=None)
-
         # Unet Efficient 系列
         elif self.model_name == 'unet_efficientnet_b4':
             model = smp.Unet('efficientnet-b4', encoder_weights=self.encoder_weights, classes=self.class_num, activation=None)
-
+        
         return model
 
     def create_model(self):
@@ -96,6 +95,7 @@ class ClassifyResNet(Module):
                 nn.ReLU(),
                 nn.Conv2d(160, 32, kernel_size=1)
             )
+
         self.logit = nn.Conv2d(32, self.class_num, kernel_size=1)
 
         self.training = training
@@ -112,15 +112,15 @@ class ClassifyResNet(Module):
 
 if __name__ == "__main__":
     # test segment 模型
-    model_name = 'unet_resnet50'
-    model = Model(model_name, class_num=4).create_model_cpu()
-    x = torch.Tensor(5, 3, 256, 1600)
-    x = model.encoder(x)
-    # print(model)
+    model_name = 'unet_se_resnext50_32x4d'
+    model = Model(model_name).create_model()
+    print(model)
 
     # test classify 模型
     class_net = ClassifyResNet(model_name, 4)
     x = torch.Tensor(8, 3, 256, 1600)
     y = torch.ones(8, 4)
+    seg_output = model(x)
+    print(seg_output.size())
     output = class_net(x)
     print(output.size())

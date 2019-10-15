@@ -318,15 +318,15 @@ def classify_provider(
 
 
 if __name__ == "__main__":
-    data_folder = "datasets/Steel_data"
-    df_path = "datasets/Steel_data/train.csv"
+    data_folder = "./Steel_data"
+    df_path = "./Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     batch_size = 12
     num_workers = 4
     n_splits = 1
-    mask_only = True
-    crop = False
+    mask_only = False
+    crop = True
     height = 256
     width = 512
     # 测试分割数据集

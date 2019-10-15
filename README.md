@@ -81,9 +81,7 @@ When run `SUBMISSION=/path/to/csv/file.csv make release-csv`, If you encounter t
 - [x] finish choose_threshold
 - [x] finish data augmentation
 - [ ] EfficientB4( w/ ASPP)
-- [x] ResNet50
-- [x] code review(validation dice, threshold dice)
+- [ ] code review(validation dice, threshold dice)
 - [ ] choose fold
 - [ ] ensemble
-- [x] early stopping automaticly
-- [ ] GN
+- [ ] early stopping automaticly
