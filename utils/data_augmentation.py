@@ -110,7 +110,7 @@ if __name__ == "__main__":
         image_id, mask = make_mask(index, df)
         image_path = os.path.join(data_folder, 'train_images', image_id)
         image = cv2.imread(image_path)
-        image_aug, mask_aug = data_augmentation(image, mask, crop=True, height=256, width=400)
+        image_aug, mask_aug = data_augmentation(image, mask, crop=False, height=256, width=400)
         normalize = Normalize(mean=mean, std=std)
         image = normalize(image=image)['image']
         image_aug = normalize(image=image_aug)['image']

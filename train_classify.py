@@ -67,7 +67,6 @@ class TrainVal():
         optimizer = optim.Adam(self.model.module.parameters(), self.lr, weight_decay=self.weight_decay)
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, self.epoch+10)
         global_step = 0
-        es = EarlyStopping(mode='min', patience=10)
 
         for epoch in range(self.epoch):
             epoch += 1
@@ -97,10 +96,6 @@ class TrainVal():
             # Print the log info
             average_loss = epoch_loss / len(tbar)
             print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, average_loss))
-
-            # 提前终止
-            if es.step(average_loss):
-                break
 
             # 验证模型
             class_neg_accuracy, class_pos_accuracy, class_accuracy, neg_accuracy, pos_accuracy, accuracy, loss_valid = \
@@ -160,8 +155,8 @@ class TrainVal():
 
 if __name__ == "__main__":
     config = get_classify_config()
-    mean=(0.485, 0.456, 0.406)
-    std=(0.229, 0.224, 0.225)
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
     dataloaders = classify_provider(
         config.dataset_root, 
         os.path.join(config.dataset_root, 'train.csv'), 

@@ -7,15 +7,14 @@ import os
 import codecs, json
 import time
 import pickle
-import numpy as np
+import random
 from models.model import Model
-from utils.cal_dice_iou import Meter, compute_dice_class
+from utils.cal_dice_iou import Meter
 from datasets.steel_dataset import provider
 from utils.set_seed import seed_torch
 from config import get_seg_config
 from solver import Solver
 from utils.loss import MultiClassesSoftBCEDiceLoss
-from utils.easy_stopping import EarlyStopping
 
 
 class TrainVal():
@@ -50,7 +49,6 @@ class TrainVal():
 
         # 加载损失函数
         self.criterion = torch.nn.BCEWithLogitsLoss()
-        # self.criterion = MultiClassesSoftBCEDiceLoss(classes_num=self.class_num, size_average=True, weight=[1.0, 1.0])
 
         # 保存json文件和初始化tensorboard
         TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S-%d}".format(datetime.datetime.now(), fold)
@@ -76,8 +74,6 @@ class TrainVal():
         optimizer = optim.Adam(self.model.module.parameters(), self.lr, weight_decay=self.weight_decay)
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, self.epoch+10)
         global_step = 0
-
-        es = EarlyStopping(mode='min', patience=10)
 
         for epoch in range(self.epoch):
             epoch += 1
@@ -112,28 +108,24 @@ class TrainVal():
             average_loss = epoch_loss/len(tbar)
             print('Finish Epoch [%d/%d], Average Loss: %.7f' % (epoch, self.epoch, average_loss))
 
-            # 提前终止
-            if es.step(average_loss):
-                break
-
             # 验证模型
-            loss_valid, dice_valid, dice_classes = self.validation(valid_loader)
-            if dice_valid > self.max_dice_valid: 
+            loss_valid, dice_valid, iou_valid = self.validation(valid_loader)
+            if dice_valid > self.max_dice_valid:
                 is_best = True
                 self.max_dice_valid = dice_valid
-            else: is_best = False
-            
+            else:
+                is_best = False
+
             state = {
                 'epoch': epoch,
                 'state_dict': self.model.module.state_dict(),
                 'max_dice_valid': self.max_dice_valid,
             }
 
-            self.solver.save_checkpoint(os.path.join(self.model_path, '%s_fold%d.pth' % (self.model_name, self.fold)), state, is_best)
+            self.solver.save_checkpoint(os.path.join(self.model_path, '%s_fold%d.pth' % (self.model_name, self.fold)),
+                                        state, is_best)
             self.writer.add_scalar('valid_loss', loss_valid, epoch)
             self.writer.add_scalar('valid_dice', dice_valid, epoch)
-            for each_class, dice_class in enumerate(dice_classes):
-                self.writer.add_scalar('valid_dice_class{}'.format(each_class+1), dice_class, epoch)
 
     def validation(self, valid_loader):
         ''' 完成模型的验证过程
@@ -146,10 +138,10 @@ class TrainVal():
         :return dice_classes: 验证集上各类的dice值
         '''
         self.model.eval()
+        meter = Meter()
         tbar = tqdm.tqdm(valid_loader)
-        loss_sum, dice_sum = 0, 0
+        loss_sum = 0
 
-        sum_classes = [0 for i in range(self.class_num)]
         with torch.no_grad(): 
             for i, samples in enumerate(tbar):
                 if len(samples) == 0:
@@ -159,24 +151,20 @@ class TrainVal():
                 masks_predict = self.solver.forward(images)
                 loss = self.solver.cal_loss(masks, masks_predict, self.criterion)
                 loss_sum += loss.item()
-                
+
                 # 注意，损失函数中包含sigmoid函数，meter.update中也包含了sigmoid函数
-                masks_predict_binary = torch.sigmoid(masks_predict) > 0.5
-                for each_class in range(self.class_num):
-                    masks_predict_oneclass = masks_predict_binary[:, each_class, ...]
-                    masks_oneclasses = masks[:, each_class, ...]
-                    dice = compute_dice_class(masks_predict_oneclass.float(), masks_oneclasses)
-                    sum_classes[each_class] += dice
-                    dice_sum += dice
+                # masks_predict_binary = torch.sigmoid(masks_predict) > 0.5
+                meter.update(masks, masks_predict.detach().cpu())
+
                 descript = "Val Loss: {:.7f}".format(loss.item())
                 tbar.set_description(desc=descript)
-        loss_mean = loss_sum/len(tbar)
-        dice_mean = dice_sum/len(tbar)/self.class_num
-        dice_classes = [x/len(tbar) for x in sum_classes]
-        print("loss_mean: %0.4f, dice_mean: %0.4f, dice_first_class: %0.4f, dice_second_class: %0.4f, dice_third_class: %0.4f, dice_forth_class: %0.4f" \
-            % (loss_mean, dice_mean, dice_classes[0], dice_classes[1], dice_classes[2], dice_classes[3]))
-        return loss_mean, dice_mean, dice_classes
-    
+            loss_mean = loss_sum / len(tbar)
+
+            dices, iou = meter.get_metrics()
+            dice, dice_neg, dice_pos = dices
+            print("IoU: %0.4f | dice: %0.4f | dice_neg: %0.4f | dice_pos: %0.4f" % (iou, dice, dice_neg, dice_pos))
+            return loss_mean, dice, iou
+
     def load_weight(self, weight_path):
         """加载权重
         """
