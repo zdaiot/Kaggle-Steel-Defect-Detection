@@ -19,7 +19,7 @@ def get_seg_config():
         hwp: 6 MXQ: 12
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
         parser.add_argument('--epoch', type=int, default=65, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
@@ -30,7 +30,7 @@ def get_seg_config():
         parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_efficientnet_b4', \
+        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
             help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4/unet_resnet50')
 
         # model hyper-parameters
@@ -72,8 +72,8 @@ def get_classify_config():
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
         parser.add_argument('--crop', type=bool, default=False, help='if true, crop image to [height, width].')
-        parser.add_argument('--height', type=int, default=256, help='the height of cropped image')
-        parser.add_argument('--width', type=int, default=512, help='the width of cropped image')
+        parser.add_argument('--height', type=int, default=None, help='the height of cropped image')
+        parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
         parser.add_argument('--model_name', type=str, default='unet_resnet34', \
