@@ -149,15 +149,15 @@ class Classify_Segment_Fold():
         self.class_num = class_num
         for (model_name, fold) in self.classify_fold.items():
             if kaggle == 0:
-                pth_path = self.model_path
-            else:
                 pth_path = os.path.join(self.model_path, model_name)
+            else:
+                pth_path = self.model_path                
             self.classify_model = Get_Classify_Results(model_name, fold, pth_path, self.class_num, tta_flag=tta_flag)
         for (model_name, fold) in self.classify_fold.items():
             if kaggle == 0:
-                pth_path = self.model_path
-            else:
                 pth_path = os.path.join(self.model_path, model_name)
+            else:
+                pth_path = self.model_path
             self.segment_model = Get_Segment_Results(model_name, fold, pth_path, self.class_num, tta_flag=tta_flag)
 
     def classify_segment(self, images):
@@ -178,19 +178,21 @@ class Classify_Segment_Fold():
 
 
 class Classify_Segment_Folds():
-    def __init__(self, model_name, n_splits, model_path, class_num=4, tta_flag=False):
+    def __init__(self, classify_folds, segment_folds, model_path, class_num=4, tta_flag=False, kaggle=0):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
 
-        :param model_name: 当前的模型名称
-        :param n_splits: 总共有多少折，为list列表
+        :param classify_folds: 字典，{'model_name': fold_index}
+        :param segment_folds: 字典，{'model_name': fold_index}
         :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
+        :param kaggle: 是否在kaggle的kernel运行
         '''
-        self.model_name = model_name
-        self.n_splits = n_splits
+        self.classify_folds = classify_folds
+        self.segment_folds = segment_folds
         self.model_path = model_path
         self.class_num = class_num
         self.tta_flag = tta_flag
+        self.kaggle = kaggle
 
         self.classify_models, self.segment_models = list(), list()
         self.get_classify_segment_models()
@@ -198,10 +200,18 @@ class Classify_Segment_Folds():
     def get_classify_segment_models(self):
         ''' 加载所有折的分割模型和分类模型
         '''
-
-        for fold in self.n_splits:
-            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
-            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
+        for (model_name, fold) in self.classify_folds.items():
+            if self.kaggle == 0:
+                pth_path = os.path.join(self.model_path, model_name)
+            else:            
+                pth_path = self.model_path                
+            self.classify_models.append(Get_Classify_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
+        for (model_name, fold) in self.segment_folds.items():
+            if self.kaggle == 0:
+                pth_path = os.path.join(self.model_path, model_name)
+            else:            
+                pth_path = self.model_path
+            self.segment_models.append(Get_Segment_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
 
     def classify_segment_folds(self, images):
         ''' 使用投票法处理所有fold一个batch的分割结果和分类结果
@@ -220,7 +230,7 @@ class Classify_Segment_Folds():
                     if pred == 0:
                         predict_masks[index, each_class, ...] = 0
             results += predict_masks.detach().cpu()
-        vote_model_num = len(self.n_splits)
+        vote_model_num = len(self.segment_folds)
         vote_ticket = round(vote_model_num / 2.0)
         results = results > vote_ticket
 
@@ -235,6 +245,7 @@ class Classify_Segment_Folds_Split():
         :param segment_folds: 字典，{'model_name': fold_index}
         :param model_path: 存放所有模型的路径, checkpoints/
         :param class_num: 类别总数
+        :param kaggle: 是否在kaggle的kernel运行
         '''
         self.classify_folds = classify_folds
         self.segment_folds = segment_folds
@@ -251,15 +262,15 @@ class Classify_Segment_Folds_Split():
         '''
         for (model_name, fold) in self.classify_folds.items():
             if self.kaggle == 0:
-                pth_path = self.model_path
-            else:            
                 pth_path = os.path.join(self.model_path, model_name)
+            else:            
+                pth_path = self.model_path                
             self.classify_models.append(Get_Classify_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
         for (model_name, fold) in self.segment_folds.items():
             if self.kaggle == 0:
-                pth_path = self.model_path
-            else:            
                 pth_path = os.path.join(self.model_path, model_name)
+            else:            
+                pth_path = self.model_path
             self.segment_models.append(Get_Segment_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
 
     def classify_segment_folds(self, images, average_strategy=False):

@@ -108,13 +108,12 @@ def create_submission(classify_splits, seg_splits, batch_size, num_workers, mean
 
 if __name__ == "__main__":
     # 设置超参数
-    model_name = 'unet_efficientnet_b4'
     num_workers = 12
-    batch_size = 4
+    batch_size = 1
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    classify_splits = {'unet_resnet34': 1} # [0, 1, 2, 3, 4]
-    segment_splits = {'unet_resnet34': 1}
+    classify_splits = {'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1} # 'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1
+    segment_splits = {'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1} # 'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1
     tta_flag = True
     average_strategy = False
 
