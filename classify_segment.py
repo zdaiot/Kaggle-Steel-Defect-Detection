@@ -107,7 +107,7 @@ class Get_Segment_Results():
         self.segment_model.eval()
 
         # 加载存放像素阈值和连通域的json文件
-        self.json_path = os.path.join(self.model_path, 'result.json')
+        self.json_path = os.path.join(self.model_path, '%s_result.json' % self.model_name)
         self.best_thresholds, self.best_minareas = get_thresholds_minareas(self.json_path, self.fold)
 
     def get_segment_results(self, images, process_flag=True):
