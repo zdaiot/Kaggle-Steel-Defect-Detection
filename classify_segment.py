@@ -134,21 +134,31 @@ class Get_Segment_Results():
 
 
 class Classify_Segment_Fold():
-    def __init__(self, model_name, fold, model_path, class_num=4, tta_flag=False):
+    def __init__(self, classify_fold, seg_fold, model_path, class_num=4, tta_flag=False, kaggle=0):
         ''' 处理当前fold一个batch的分割结果和分类结果
 
         :param model_name: 当前的模型名称
-        :param fold: 当前的折数
+        :param classify_fold: 字典，分类模型 {'model_name': fold_index}
+        :param seg_fold: 字典，分割模型 {'model_name': fold_index}
         :param model_path: 存放所有模型的路径
         :param class_num: 类别总数
         '''
-        self.model_name = model_name
-        self.fold = fold
+        self.classify_fold = classify_fold
+        self.seg_fold = seg_fold
         self.model_path = model_path
         self.class_num = class_num
-
-        self.classify_model = Get_Classify_Results(self.model_name, self.fold, self.model_path, self.class_num, tta_flag=tta_flag)
-        self.segment_model = Get_Segment_Results(self.model_name, self.fold, self.model_path, self.class_num, tta_flag=tta_flag)
+        for (model_name, fold) in self.classify_fold.items():
+            if kaggle == 0:
+                pth_path = self.model_path
+            else:
+                pth_path = os.path.join(self.model_path, model_name)
+            self.classify_model = Get_Classify_Results(model_name, fold, pth_path, self.class_num, tta_flag=tta_flag)
+        for (model_name, fold) in self.classify_fold.items():
+            if kaggle == 0:
+                pth_path = self.model_path
+            else:
+                pth_path = os.path.join(self.model_path, model_name)
+            self.segment_model = Get_Segment_Results(model_name, fold, pth_path, self.class_num, tta_flag=tta_flag)
 
     def classify_segment(self, images):
         ''' 处理当前fold一个batch的分割结果和分类结果
@@ -218,21 +228,20 @@ class Classify_Segment_Folds():
 
 
 class Classify_Segment_Folds_Split():
-    def __init__(self, model_name, classify_folds, segment_folds, model_path, class_num=4, tta_flag=False):
+    def __init__(self, classify_folds, segment_folds, model_path, class_num=4, tta_flag=False, kaggle=0):
         ''' 首先得到分类模型的集成结果，再得到分割模型的集成结果，最后将两个结果进行融合
 
-        :param model_name: 当前的模型名称
-        :param classify_folds: 参与集成的分类模型的折序号，为list列表
-        :param segment_folds: 参与集成的分割模型的折序号，为list列表
-        :param model_path: 存放所有模型的路径
+        :param classify_folds: 字典，{'model_name': fold_index}
+        :param segment_folds: 字典，{'model_name': fold_index}
+        :param model_path: 存放所有模型的路径, checkpoints/
         :param class_num: 类别总数
         '''
-        self.model_name = model_name
         self.classify_folds = classify_folds
         self.segment_folds = segment_folds
         self.model_path = model_path
         self.class_num = class_num
         self.tta_flag = tta_flag
+        self.kaggle = kaggle
 
         self.classify_models, self.segment_models = list(), list()
         self.get_classify_segment_models()
@@ -240,10 +249,18 @@ class Classify_Segment_Folds_Split():
     def get_classify_segment_models(self):
         ''' 加载所有折的分割模型和分类模型
         '''
-        for fold in self.classify_folds:
-            self.classify_models.append(Get_Classify_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
-        for fold in self.segment_folds:
-            self.segment_models.append(Get_Segment_Results(self.model_name, fold, self.model_path, self.class_num, tta_flag=self.tta_flag))
+        for (model_name, fold) in self.classify_folds.items():
+            if self.kaggle == 0:
+                pth_path = self.model_path
+            else:            
+                pth_path = os.path.join(self.model_path, model_name)
+            self.classify_models.append(Get_Classify_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
+        for (model_name, fold) in self.segment_folds.items():
+            if self.kaggle == 0:
+                pth_path = self.model_path
+            else:            
+                pth_path = os.path.join(self.model_path, model_name)
+            self.segment_models.append(Get_Segment_Results(model_name, fold, pth_path, self.class_num, tta_flag=self.tta_flag))
 
     def classify_segment_folds(self, images, average_strategy=False):
         ''' 使用投票法或者平均法处理所有fold一个batch的分割结果和分类结果

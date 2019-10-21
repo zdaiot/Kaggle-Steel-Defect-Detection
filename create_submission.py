@@ -10,6 +10,7 @@ import cv2
 kaggle = 0
 if kaggle:
     os.system('pip install /kaggle/input/segmentation_models/pretrainedmodels-0.7.4/ > /dev/null')
+    os.system('pip install /kaggle/input/segmentation_models/EfficientNet-PyTorch/ > /dev/null')
     os.system('pip install /kaggle/input/segmentation_models/segmentation_models.pytorch/ > /dev/null')
     package_path = '/kaggle/input/sources' # add unet script dataset
     import sys
@@ -55,12 +56,11 @@ def mask2rle(img):
     return ' '.join(str(x) for x in runs)
 
 
-def create_submission(classify_splits, seg_splits, model_name, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path, tta_flag=False, average_strategy=False):
+def create_submission(classify_splits, seg_splits, batch_size, num_workers, mean, std, test_data_folder, sample_submission_path, model_path, tta_flag=False, average_strategy=False, kaggle=0):
     '''
 
-    :param classify_splits: 分类模型的折数，类型为list
-    :param seg_splits: 分割模型的折数，类型为list    
-    :param model_name: 当前模型的名称
+    :param classify_splits: 分类模型的折数，类型为字典
+    :param seg_splits: 分割模型的折数，类型为字典
     :param batch_size: batch的大小
     :param num_workers: 加载数据的线程
     :param mean: 均值
@@ -70,6 +70,7 @@ def create_submission(classify_splits, seg_splits, model_name, batch_size, num_w
     :param model_path: 当前模型权重存放的目录
     :param tta_flag: 是否使用tta
     :param average_strategy: 是否使用平均策略
+    :param kaggle: 线上或线下
     :return: None
     '''
     # 加载数据集
@@ -82,16 +83,17 @@ def create_submission(classify_splits, seg_splits, model_name, batch_size, num_w
         pin_memory=True
     )
     if len(classify_splits) == 1 and len(seg_splits) == 1:
-        classify_segment = Classify_Segment_Fold(model_name, classify_splits[0], model_path, tta_flag=tta_flag).classify_segment
-    elif len(classify_splits) == len(seg_splits):
-        classify_segment = Classify_Segment_Folds(model_name, classify_splits, model_path, tta_flag=tta_flag).classify_segment_folds
-    elif len(classify_splits) != len(seg_splits):
-        classify_segment = Classify_Segment_Folds_Split(model_name, classify_splits, seg_splits, model_path, tta_flag=tta_flag).classify_segment_folds
+        classify_segment = Classify_Segment_Fold(classify_splits, seg_splits, model_path, tta_flag=tta_flag, kaggle=kaggle).classify_segment
+    else:
+        classify_segment = Classify_Segment_Folds_Split(classify_splits, seg_splits, model_path, tta_flag=tta_flag, kaggle=kaggle).classify_segment_folds
 
     # start prediction
     predictions = []
     for i, (fnames, images) in enumerate(tqdm(test_loader)):
-        results = classify_segment(images, average_strategy=average_strategy).detach().cpu().numpy()
+        if len(classify_splits) == 1 and len(seg_splits) == 1:
+            results = classify_segment(images).detach().cpu().numpy()
+        else:
+            results = classify_segment(images, average_strategy=average_strategy).detach().cpu().numpy()
 
         for fname, preds in zip(fnames, results):
             for cls, pred in enumerate(preds):
@@ -106,13 +108,13 @@ def create_submission(classify_splits, seg_splits, model_name, batch_size, num_w
 
 if __name__ == "__main__":
     # 设置超参数
-    model_name = 'unet_resnet34'
+    model_name = 'unet_efficientnet_b4'
     num_workers = 12
     batch_size = 4
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
-    classify_splits = [1] # [0, 1, 2, 3, 4]
-    segment_splits = [0, 1, 2, 3, 4]
+    classify_splits = {'unet_resnet34': 1} # [0, 1, 2, 3, 4]
+    segment_splits = {'unet_resnet34': 1}
     tta_flag = True
     average_strategy = False
 
@@ -123,7 +125,7 @@ if __name__ == "__main__":
     else:
         sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
         test_data_folder = 'datasets/Steel_data/test_images'
-        model_path = './checkpoints/' + model_name
+        model_path = './checkpoints/'
 
-    create_submission(classify_splits, segment_splits, model_name, batch_size, num_workers, mean, std, test_data_folder,
-                      sample_submission_path, model_path, tta_flag=tta_flag, average_strategy=average_strategy)
+    create_submission(classify_splits, segment_splits, batch_size, num_workers, mean, std, test_data_folder,
+                      sample_submission_path, model_path, tta_flag=tta_flag, average_strategy=average_strategy, kaggle=kaggle)

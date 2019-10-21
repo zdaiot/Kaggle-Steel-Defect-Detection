@@ -17,10 +17,12 @@ def get_seg_config():
         zdaiot:12 z840:16 mxq:24
         unet_se_renext50
         hwp: 6 MXQ: 12
+        unet_resnet50
+        MXQ: 16
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
-        parser.add_argument('--epoch', type=int, default=65, help='epoch')
+        parser.add_argument('--batch_size', type=int, default=16, help='batch size')
+        parser.add_argument('--epoch', type=int, default=50, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
         parser.add_argument('--n_splits', type=int, default=5, help='n_splits_fold')
@@ -30,8 +32,8 @@ def get_seg_config():
         parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
-            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4/unet_resnet50')
+        parser.add_argument('--model_name', type=str, default='unet_resnet50', \
+            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4/unet_resnet50/unet_efficientnet_b3')
 
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
@@ -64,9 +66,11 @@ def get_classify_config():
         zdaiot:12 z840:16 mxq:48
         unet_se_renext50
         hwp: 8
+        unet_resnet50:
+        MXQ: 24
         '''
         # parser.add_argument('--image_size', type=int, default=768, help='image size')
-        parser.add_argument('--batch_size', type=int, default=48, help='batch size')
+        parser.add_argument('--batch_size', type=int, default=24, help='batch size')
         parser.add_argument('--epoch', type=int, default=30, help='epoch')
 
         parser.add_argument('--augmentation_flag', type=bool, default=True, help='if true, use augmentation method in train set')
@@ -76,13 +80,13 @@ def get_classify_config():
         parser.add_argument('--width', type=int, default=None, help='the width of cropped image')
 
         # model set 
-        parser.add_argument('--model_name', type=str, default='unet_resnet34', \
-            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4/unet_resnet50')
+        parser.add_argument('--model_name', type=str, default='unet_resnet50', \
+            help='unet_resnet34/unet_se_resnext50_32x4d/unet_efficientnet_b4/unet_resnet50/unet_efficientnet_b4')
 
         # model hyper-parameters
         parser.add_argument('--class_num', type=int, default=4)
         parser.add_argument('--num_workers', type=int, default=8)
-        parser.add_argument('--lr', type=float, default=5e-4, help='init lr')
+        parser.add_argument('--lr', type=float, default=5e-5, help='init lr')
         parser.add_argument('--weight_decay', type=float, default=0, help='weight_decay in optimizer')
         
         # dataset 

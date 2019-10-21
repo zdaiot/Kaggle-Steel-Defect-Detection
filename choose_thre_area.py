@@ -8,6 +8,7 @@ import pandas as pd
 import codecs
 import json
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 from solver import Solver
 from models.model import Model
 from datasets.steel_dataset import provider
@@ -213,9 +214,8 @@ if __name__ == "__main__":
     best_thresholds_sum, best_minareas_sum, max_dices_sum = [0 for x in range(len(dataloaders))], \
                                                             [0 for x in range(len(dataloaders))], [0 for x in range(len(dataloaders))]
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
-        if fold_index != 1:
+        if fold_index != 2:
             continue
-
         # 存放权重的路径+文件名
         load_path = os.path.join(model_path, '%s_fold%d_best.pth' % (config.model_name, fold_index))
         # 加载模型
