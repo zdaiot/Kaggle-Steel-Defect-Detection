@@ -46,7 +46,7 @@ def cal_thr_mean_models(segment_splits, file_name='result.json', num_classes=4):
                                                             [0 for x in range(num_classes)], \
                                                             [0 for x in range(num_classes)]
     for model_name, fold in segment_splits.items():
-        json_path = os.path.join('checkpoints', model_name, file_name)
+        json_path = os.path.join('checkpoints', model_name, model_name + '_' + file_name)
         with open(json_path, 'r', encoding='utf-8') as json_file:
             result = json.load(json_file)
 

@@ -214,7 +214,7 @@ if __name__ == "__main__":
     best_thresholds_sum, best_minareas_sum, max_dices_sum = [0 for x in range(len(dataloaders))], \
                                                             [0 for x in range(len(dataloaders))], [0 for x in range(len(dataloaders))]
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
-        if fold_index != 2:
+        if fold_index != 1:
             continue
         # 存放权重的路径+文件名
         load_path = os.path.join(model_path, '%s_fold%d_best.pth' % (config.model_name, fold_index))
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     best_thresholds_average, best_minareas_average, max_dices_average = [x/len(dataloaders) for x in best_thresholds_sum], \
                                                                         [x/len(dataloaders) for x in best_minareas_sum], [x/len(dataloaders) for x in max_dices_sum]
     results['mean'] = {'best_thresholds': best_thresholds_average, 'best_minareas': best_minareas_average, 'max_dices': max_dices_average}
-    with codecs.open(model_path + '/result.json', 'w', "utf-8") as json_file:
+    with codecs.open(model_path + '/%s_result.json' % (config.model_name), 'w', "utf-8") as json_file:
         json.dump(results, json_file, ensure_ascii=False)
 
     print('save the result')
