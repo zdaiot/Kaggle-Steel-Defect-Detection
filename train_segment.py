@@ -58,7 +58,8 @@ class TrainVal():
         self.max_dice_valid = 0
 
         # 设置随机种子，注意交叉验证部分划分训练集和验证集的时候，要保持种子固定
-        self.seed = 1570421136
+        self.seed = int(time.time())
+        # self.seed = 1570421136
         seed_torch(self.seed)
         with open(self.model_path + '/'+ TIMESTAMP + '.pkl','wb') as f:
             pickle.dump({'seed': self.seed}, f, -1)
