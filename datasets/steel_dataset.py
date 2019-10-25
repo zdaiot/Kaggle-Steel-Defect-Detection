@@ -223,7 +223,7 @@ def provider(
                 num_workers=num_workers,
                 collate_fn=mask_only_collate_fun, 
                 pin_memory=True, 
-                shuffle=True
+                shuffle=False
             )
         else:    
             print('Segmentation model: all data.')
@@ -239,7 +239,7 @@ def provider(
                 batch_size=batch_size, 
                 num_workers=num_workers, 
                 pin_memory=True, 
-                shuffle=True
+                shuffle=False
             )
         dataloaders.append([train_dataloader, val_dataloader])
 
@@ -310,7 +310,7 @@ def classify_provider(
             batch_size=batch_size, 
             num_workers=num_workers, 
             pin_memory=True, 
-            shuffle=True
+            shuffle=False
         )
         dataloaders.append([train_dataloader, val_dataloader])
 
@@ -318,49 +318,38 @@ def classify_provider(
 
 
 if __name__ == "__main__":
-    data_folder = "./Steel_data"
-    df_path = "./Steel_data/train.csv"
+    data_folder = "datasets/Steel_data"
+    df_path = "datasets/Steel_data/train.csv"
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     batch_size = 12
     num_workers = 4
     n_splits = 1
     mask_only = False
-    crop = True
+    crop = False
     height = 256
     width = 512
     # 测试分割数据集
     dataloader = provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits, mask_only=mask_only, crop=crop, height=height, width=width)
-    for fold_index, [train_dataloader, val_dataloader] in enumerate(dataloader):
-        train_bar = tqdm(train_dataloader)
+    class_dataloader = classify_provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
+    for fold_index, [[train_dataloader, val_dataloader], [classify_train_dataloader, classify_val_dataloader] ]in enumerate(zip(dataloader, class_dataloader)):
+        val_bar = tqdm(val_dataloader)
+        classify_val_bar = tqdm(classify_val_dataloader)
         class_color = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [139, 0, 139]]
-        for images, targets in train_bar:
+        for [[images, targets],  [classify_images, classify_targets]]in zip(val_bar, classify_val_bar):
             image = images[0]
             target = targets[0]
             image = image_with_mask_torch(image, target, mean, std)['image']
-            cv2.imshow('win', image)
-            cv2.waitKey(480)
-    class_dataloader = classify_provider(data_folder, df_path, mean, std, batch_size, num_workers, n_splits)
-    # 测试分类数据集
-    for fold_index, [train_dataloader, val_dataloader] in enumerate(class_dataloader):
-        train_bar = tqdm(train_dataloader)
-        class_color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (139, 0, 139)]
-        for images, targets in train_bar:
-            image = images[0]
-            for i in range(3):
-                image[i] = image[i] * std[i]
-                image[i] = image[i] + mean[i]  
-            image = image.permute(1, 2, 0).numpy()            
-            target = targets[0]
+            classify_target = classify_targets[0]
             position_x = 10
-            for i in range(target.size(0)):
+            for i in range(classify_target.size(0)):
                 color = class_color[i]
                 position_x += 50
                 position = (position_x, 50)
-                if target[i] != 0:
+                if classify_target[i] != 0:
                     font = cv2.FONT_HERSHEY_SIMPLEX
-                    image = cv2.putText(image, str(i), position, font, 1.2, color, 2)   
+                    image = cv2.putText(image, str(i+1), position, font, 1.2, color, 2) 
             cv2.imshow('win', image)
-            cv2.waitKey(60)
+            cv2.waitKey(0)
 
     pass
