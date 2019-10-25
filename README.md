@@ -212,7 +212,7 @@ When you first submit to kernel, you need to run
 ./uploads.sh 0
 ```
 
-Then, you can open  `https://www.kaggle.com/<username>/severstal-submission` in your browser and run   the kernel.
+Then, you can open  `https://www.kaggle.com/<username>/severstal-submission` in your browser. Change `kaggle = 0`  to `kaggle = 1` in the kernel file and you can run the kernel.
 
 If you want to update script files and kernel files, you need to run
 

@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # 是否显示真实的mask
     show_truemask_flag = True
     tta_flag = True
-    average_strategy = True
+    average_strategy = False
 
     # 测试数据集的dataloader
     sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
