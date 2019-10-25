@@ -174,7 +174,7 @@ python create_submission.py
 
 After running the code, submission.csv will be generated in the root directory, which is the result predicted by the model.
 
-**Note: **If you want to integrate different models using average strategy , please run this:
+**Note:** If you want to integrate different models using average strategy , please run this:
 
 ```bash
 python utils/cal_thre_area_mean.py
