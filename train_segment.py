@@ -186,7 +186,7 @@ if __name__ == "__main__":
         width=config.width
         )
     for fold_index, [train_loader, valid_loader] in enumerate(dataloaders):
-        if fold_index != 2:
+        if fold_index != 1:
             continue
         train_val = TrainVal(config, fold_index)
         train_val.train(train_loader, valid_loader)

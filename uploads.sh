@@ -1,9 +1,11 @@
+#!/bin/bash
+
 # 传参为0时，初始化；传参为1时，只更新脚本文件和kernel文件；传参为2时，更新脚本文件、kernel文件和权重文件
 # 注意下面的model_name变量要根据情况修改
 export http_proxy=http://localhost:8123
 export https_proxy=http://localhost:8123
 
-model_name="unet_resnet34"
+model_names="unet_resnet34 unet_resnet50 unet_se_resnext50_32x4d"
 
 # 建立文件夹，用于存放上传到kaggle的文件
 if [ ! -d "kaggle" ]; then
@@ -19,8 +21,8 @@ fi
 # 删除已有的文件
 rm kaggle/sources/*.py -f
 rm kaggle/sources/*/*.py -f
-rm kaggle/$model_name/*_best.pth -f
-rm kaggle/$model_name/result.json -f
+rm kaggle/checkpoints/*_best.pth -f
+rm kaggle/checkpoints/*result.json -f
 
 # 复制脚本文件
 cp models/model.py kaggle/sources/models
@@ -32,8 +34,11 @@ echo "Create __init__.py"
 touch kaggle/sources/models/__init__.py
 
 # 复制权重文件
-cp checkpoints/$model_name/*_best.pth kaggle/checkpoints
-cp checkpoints/$model_name/result.json kaggle/checkpoints
+for model_name in $model_names; do 
+    cp checkpoints/$model_name/*_best.pth kaggle/checkpoints
+    cp checkpoints/$model_name/*result.json kaggle/checkpoints
+done
+cp checkpoints/result.json kaggle/checkpoints
 
 # 复制kernel脚本
 cp create_submission.py kaggle/submission/kernel.py
@@ -79,9 +84,9 @@ if [ $1 -eq 0 ]; then
     datasets2="${USERNAME}/sources"
     datasets3="${USERNAME}/checkpoints"
     datasetsall="\"dataset_sources\": [\"${datasets1}\",\"${datasets2}\",\"${datasets3}\"]"
-	  # shellcheck disable=SC2154
-	  sed -i "s|\"dataset_sources\": \[\]|${datasetsall}|g" kaggle/submission/kernel-metadata.json
-	  sed -i 's#"competition_sources": \[\]#"competition_sources": \["severstal-steel-defect-detection"]#' kaggle/submission/kernel-metadata.json
+	# shellcheck disable=SC2154
+	sed -i "s|\"dataset_sources\": \[\]|${datasetsall}|g" kaggle/submission/kernel-metadata.json
+	sed -i 's#"competition_sources": \[\]#"competition_sources": \["severstal-steel-defect-detection"]#' kaggle/submission/kernel-metadata.json
     kaggle kernels push -p kaggle/submission
 fi
 

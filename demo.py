@@ -6,33 +6,28 @@ from tqdm import tqdm
 import cv2
 import os
 from config import get_seg_config
-from classify_segment import Classify_Segment_Folds, Classify_Segment_Fold, Segment_Folds, Get_Segment_Results
+from classify_segment import Classify_Segment_Folds_Split, Classify_Segment_Fold
 from datasets.steel_dataset import TestDataset, provider
 
 
-def demo(n_splits, use_segment_only, model_name, mean, std, show_truemask_flag, dataloader, model_path, auto_flag):
+def demo(classify_splits, seg_splits, mean, std, show_truemask_flag, dataloader, model_path, auto_flag, tta_flag, average_strategy):
     '''
 
-    :param n_splits: 折数，类型为list
-    :param use_segment_only: 是否只使用分割模型
-    :param model_name: 当前模型的名称
+    :param classify_splits: 分类模型的折数，类型为字典
+    :param seg_splits: 分割模型的折数，类型为字典
     :param mean: 均值
     :param std: 方差
     :param dataloader: 数据加载器
     :param show_truemask_flag: 是否显示真实标定
     :param model_path: 当前模型权重存放的目录
+    :param tta_flag: 是否使用tta
+    :param average_strategy: 是否使用平均策略
     :return: None
     '''
-    if use_segment_only:
-        if len(n_splits) == 1:
-            model = Get_Segment_Results(model_name, n_splits[0], model_path).get_segment_results
-        else:
-            model = Segment_Folds(model_name, n_splits, model_path).segment_folds
+    if len(classify_splits) == 1 and len(seg_splits) == 1:
+        model = Classify_Segment_Fold(classify_splits, seg_splits, model_path, tta_flag=tta_flag, kaggle=0).classify_segment
     else:
-        if len(n_splits) == 1:
-            model = Classify_Segment_Fold(model_name, n_splits[0], model_path).classify_segment
-        else:
-            model = Classify_Segment_Folds(model_name, n_splits, model_path).classify_segment_folds
+        model = Classify_Segment_Folds_Split(classify_splits, seg_splits, model_path, tta_flag=tta_flag, kaggle=0).classify_segment_folds
 
     # start prediction
     if show_truemask_flag:
@@ -40,14 +35,20 @@ def demo(n_splits, use_segment_only, model_name, mean, std, show_truemask_flag, 
             if len(samples) == 0:
                 continue
             images, masks = samples[0], samples[1]
-            results = model(images).detach().cpu().numpy()
+            if len(classify_splits) == 1 and len(seg_splits) == 1:
+                results = model(images).detach().cpu().numpy()
+            else:
+                results = model(images, average_strategy=average_strategy).detach().cpu().numpy()
             pred_show(images, results, mean, std, targets=masks, flag=show_truemask_flag, auto_flag=auto_flag)
     else:
         for fnames, samples in tqdm(dataloader):
             if len(samples) == 0:
                 continue
             images, masks = samples[0], samples[1]
-            results = model(images).detach().cpu().numpy()
+            if len(classify_splits) == 1 and len(seg_splits) == 1:
+                results = model(images).detach().cpu().numpy()
+            else:
+                results = model(images, average_strategy=average_strategy).detach().cpu().numpy()
             pred_show(images, results, mean, std, targets=None, flag=show_truemask_flag, auto_flag=auto_flag)
 
 
@@ -101,20 +102,21 @@ def pred_show(images, preds, mean, std, targets=None, flag=False, auto_flag=Fals
 
 if __name__ == "__main__":
     config = get_seg_config()
+    config.batch_size = 1
     # 设置超参数
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
 
+    classify_splits = {'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1} # 'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1
+    segment_splits = {'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1} # 'unet_resnet34': 1, 'unet_resnet50': 1, 'unet_se_resnext50_32x4d': 1
     # 在哪一折的验证集上进行验证
     fold = 1
-    # 是否显示真实的mask
-    show_truemask_flag = True
-    # 加载哪几折的模型进行测试，若list中有多个值，则使用投票法
-    n_splits = [0, 1, 2, 3, 4]  # [0, 1, 2, 3, 4]
-    # 是否只使用分割模型
-    use_segment_only = True
     # 是否使用自动显示
     auto_flag = False
+    # 是否显示真实的mask
+    show_truemask_flag = True
+    tta_flag = True
+    average_strategy = True
 
     # 测试数据集的dataloader
     sample_submission_path = 'datasets/Steel_data/sample_submission.csv'
@@ -136,7 +138,7 @@ if __name__ == "__main__":
         dataloader = valid_loader
     else:
         dataloader = test_loader
-    demo(n_splits, use_segment_only, config.model_name, mean, std, show_truemask_flag, dataloader, \
-         model_path='./checkpoints/'+config.model_name, auto_flag=auto_flag)
+    demo(classify_splits, segment_splits, mean, std, show_truemask_flag, dataloader, \
+         model_path='./checkpoints/', auto_flag=auto_flag, tta_flag=tta_flag, average_strategy=average_strategy)
 
 
