@@ -5,8 +5,10 @@
 Code for Kaggle [Steel Defect Detection](https://www.kaggle.com/c/severstal-steel-defect-detection), 96th place solution (Top4%).
 
 ## Requirements
-* Pytorch 1.1.0
-* Torchvision 0.3.0
+* Pytorch 1.2.0
+* Torchvision 0.4.0
+* pretrainedmodels 0.7.4
+* efficientnet-pytorch 0.4.0
 * Python3.7
 * Install image augumentation library [albumentations](https://github.com/albu/albumentations)
 ```
@@ -18,7 +20,7 @@ conda install albumentations -c albumentations
 pip install tb-nightly
 pip install future
 ```
-* Install [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch)
+* Install [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch), using 0.0.3
 ```
 pip install git+https://github.com/qubvel/segmentation_models.pytorch
 ```
