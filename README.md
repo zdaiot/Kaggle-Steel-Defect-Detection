@@ -52,8 +52,8 @@ The followings are some visualizations of our results. There are two parts in th
 ### Clone Our Project
 
 ```bash
-git clone https://github.com/XiangqianMa/Kaggle-Pneumothorax-Seg.git
-cd Kaggle-Pneumothorax-Seg
+git clone https://github.com/zdaiot/Kaggle-Steel-Defect-Detection.git
+cd Kaggle-Steel-Defect-Detection
 ```
 
 ### Prepare Dataset
